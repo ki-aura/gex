@@ -102,6 +102,7 @@ void handlekeys(int k)
 
 	update_all_window_contents();
 	doupdate();
+	
 }
 
 
@@ -113,7 +114,7 @@ int main(int argc, char *argv[]) {
 	initscr();
 	cbreak();		  // Line buffering disabled, Pass on everything
 	noecho();		  // Don't echo input
-	keypad(stdscr, true); // Enable function keys (like KEY_RESIZE)
+	keypad(stdscr, true); 	 // Enable function keys (like KEY_RESIZE )
 	set_escdelay(50);
 
 	// Initial app setup
