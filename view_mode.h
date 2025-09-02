@@ -14,19 +14,16 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <limits.h>
+#include <menu.h>
 
-void move_view(int k);
+void handle_view_keys(int k);
 void byte_to_hex(unsigned char b, char *out);
 char byte_to_ascii(unsigned char b);
 int hex_char_to_value(char c);
 unsigned char hex_to_byte(char high, char low);
-
 void populate_grids();
 void refresh_ascii();
-void refresh_helper();
 void refresh_hex();
-void refresh_status();
 void size_windows();
 void update_all_window_contents();
 void create_windows();

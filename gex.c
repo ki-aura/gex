@@ -1,8 +1,8 @@
 #include "gex.h"
 #include "dp.h"
-#include "view_mode.h"
 #include "file_handling.h"
-
+#include "view_mode.h"
+#include "edit_mode.h"
 
 // Global variables
 appdef app = {.mode=VIEW_MODE};
@@ -13,47 +13,62 @@ ascii_windef ascii = {.win = NULL, .gc = NULL};
 char app_mode_desc[5][10] = {"Edit  ", "Insert", "Delete", "View  ", "Keys  "};
 
 
-
 void initial_setup()
 {
+	// Initialize ncurses
+	initscr();
+	cbreak();		  // Line buffering disabled, Pass on everything
+	noecho();		  // Don't echo input
+	curs_set(0);		
+	keypad(stdscr, true); 	 // Enable function keys (like KEY_RESIZE )
+	set_escdelay(50);
+
 	// general app defaults
 	app.mode=VIEW_MODE;	
 
-	// set up for debug
+	// set up global variable for debug panel
 	tmp = malloc(200);
-//sprintf(tmp, "in degbug mode"); DP(tmp); 
 
 	// Helper window 
 	helper.helpmsg=malloc(40);
 	strcpy(helper.helpmsg, "Last Key:");
 	
 	// Hex window
-	hex.helpmsg=malloc(40);
-	strcpy(hex.helpmsg, "Key:");
 	hex.v_start = 0;
-	//app.fsize = 1200;
-	
 }
 
-void handlekeys(int k)
+void final_close()
+{
+	// Clean up 
+	delete_windows();
+	clear();
+	refresh();
+	endwin();
+	free(tmp);
+}
+
+void handle_global_keys(int k)
 {
 	// first check if we're Esc out of any non-view mode
 	if (k==KEY_ESC) {
 		// exit gracefully from non-view modes
 		switch (app.mode){
 	    	case EDIT_MODE:
-	    		// call end edit mode routine
+	    		end_edit_mode();
 			break;
 		case INSERT_MODE:
-			// call end insert mode routine		
+							
 			break;
 		case DELETE_MODE:
 			// call end delete mode routine
 			break;	
-		default: break;
+		case VIEW_MODE: 
+			break; 
 		}
 		// set is back to view mode
 		app.mode=VIEW_MODE;
+		update_all_window_contents();
+		doupdate();
 		}
 	
 	// check if we've initiated a new mode
@@ -61,68 +76,68 @@ void handlekeys(int k)
 	case VIEW_MODE:
 		switch(k){
 		// special keys to change mode
-		case 't': app.mode=TEST_KEYS; break;
-		case 'e': app.mode=EDIT_MODE; break;
-		case 'i': app.mode=INSERT_MODE; break;
-		case 'd': app.mode=DELETE_MODE; break;
-		case 'g': 
-			goto_byte(); 	// popip
-			move_view(k);	//force recalcs using move
+		case 'e': 
+			app.mode=EDIT_MODE; 
+			init_edit_mode();
 			break;
-		// otherwise check for movement keys
-		default: 
-			move_view(k); 
+		case 'i': 
+			app.mode=INSERT_MODE; 
+			create_view_menu(status.win);
+			break;
+		case 'd': 
+			app.mode=DELETE_MODE; 
+			break;
+		case 'g': 
+			goto_byte(); 	// popup
+			handle_view_keys(k);	//force recalcs using move
+			update_all_window_contents();
+			doupdate();
+			break;
+		default: 	// otherwise hand off for movement keys
+			handle_view_keys(k); 
+			update_all_window_contents();
+			doupdate();
 			break;
 		}	
 		break;
-    	case EDIT_MODE:
 		
-		refresh_hex();
+    	case EDIT_MODE:
+		handle_edit_keys(k);
 		break;
+
     	case INSERT_MODE:
 	
 		break;
     	case DELETE_MODE:
 	
 		break;
-	case TEST_KEYS:
-
-		if (k >= KEY_F(1) && k <= KEY_F(12)) {
-			int n = k - KEY_F0;   // KEY_F(n) = KEY_F0 + n
-			sprintf(helper.helpmsg, "F:%i  %o         ", n, k);
-		} else {
-			sprintf(helper.helpmsg, "Key: %i %o       ", k, k);
-		}
-		refresh_helper();
-	
-		break;
-	default: 
-		break;
-	}
-
-	update_all_window_contents();
-	doupdate();
-	
+	}	
 }
 
+void refresh_status()
+{
+	box(status.win, 0, 0);
+	mvwprintw(status.win, 1, 1, "Mode %s Fsize %i offset %i to %i       ", app_mode_desc[app.mode], 
+					app.fsize, hex.v_start, hex.v_end);
+	mvwprintw(status.win, 2, 1, "Screen: %d rows, %d cols, grid %dx%d=%d", app.rows, app.cols, 
+					hex.digits, hex.rows, hex.grid);
+	wnoutrefresh(status.win);
+}
 
-int main(int argc, char *argv[]) {
-	// Debug panel on or off?
-	DP_ON=true;
-	
-	// Initialize ncurses
-	initscr();
-	cbreak();		  // Line buffering disabled, Pass on everything
-	noecho();		  // Don't echo input
-	keypad(stdscr, true); 	 // Enable function keys (like KEY_RESIZE )
-	set_escdelay(50);
+void refresh_helper(char *helpmsg)
+{
+	box(helper.win, 0, 0);
+	mvwprintw(helper.win, 1, 1, helpmsg); 
+	wnoutrefresh(helper.win);
+}
 
+int main(int argc, char *argv[]) 
+{
 	// Initial app setup
 	initial_setup();
 
 	// open file
 	if (open_file(argc, argv)) {
-	
 		// and go....
 		create_windows();
 
@@ -135,28 +150,256 @@ int main(int argc, char *argv[]) {
 			if (ch == KEY_RESIZE) {
 				// if not in view mode when the window is resized, then this could
 				// cause issues, so simulate this by setting the character to Esc (27)
-				// and calling handlekeys
-				handlekeys(KEY_ESC);		
+				// and calling handle_global_keys
+				handle_global_keys(KEY_ESC);		
 				// Re-create all windows on resize
 				create_windows();
 			} else {
-				if (!app.too_small) handlekeys(ch);
+				if (!app.too_small) handle_global_keys(ch);
 			}
 			ch = getch();
 		}
-	
 		// no longer need the file open
 		close_file();
+	} 
 	
-	} else {
-		DP("open file failed");
-	}
-		
-	// Clean up and exit ncurses
-	delete_windows();
-	clear();
-	refresh();
-	endwin();
-	free(tmp);
+	// tidy up
+	final_close();		
 	return 0;
 }
+
+// basic version 
+void bcreate_view_menu(WINDOW *status_win)
+{
+    ITEM *items[6];
+    MENU *menu;
+    WINDOW *sub;
+    int h, w;
+
+    // Define items sequentially
+    items[0] = new_item("View", NULL);
+    items[1] = new_item("Edit", NULL);
+    items[2] = new_item("Insert", NULL);
+    items[3] = new_item("Delete", NULL);
+    items[4] = new_item("Quit", NULL);
+    items[5] = NULL;  // terminator
+
+    // Create the menu
+    menu = new_menu((ITEM **)items);
+
+    // Get status window size
+    getmaxyx(status_win, h, w);
+
+    // Create a subwindow for the menu items, leave one line for the title and 1 char border
+    sub = derwin(status_win, 1, w - 2, 2, 1);  // 1 row high, full width minus borders
+    set_menu_win(menu, status_win);
+    set_menu_sub(menu, sub);
+
+    // Horizontal layout: 1 row, all items visible
+    set_menu_format(menu, 1, 5);
+    set_menu_mark(menu, "");   // no arrows
+
+    // Enable arrow keys in status_win
+    keypad(status_win, TRUE);
+
+    // Draw border and title
+    box(status_win, 0, 0);
+    mvwprintw(status_win, 0, 2, " View Menu ");
+
+    // Post menu
+    post_menu(menu);
+
+    // Refresh both windows
+    wrefresh(status_win);
+    wrefresh(sub);
+
+    int c;
+    while ((c = wgetch(status_win)) != 'q') {
+        switch (c) {
+            case KEY_LEFT:
+                menu_driver(menu, REQ_LEFT_ITEM);
+                break;
+            case KEY_RIGHT:
+                menu_driver(menu, REQ_RIGHT_ITEM);
+                break;
+            case 10: // Enter
+                mvwprintw(status_win, h - 2, 2,
+                          "Selected: %s", item_name(current_item(menu)));
+                wclrtoeol(status_win);
+                break;
+        }
+        wrefresh(sub);        // update menu items
+        wrefresh(status_win); // update border/title
+    }
+
+    // Cleanup
+    unpost_menu(menu);
+    free_menu(menu);
+    for (int i = 0; i < 5; i++)
+        free_item(items[i]);
+    delwin(sub);
+}
+
+// panel version
+void pcreate_view_menu(WINDOW *status_win)
+{
+    ITEM *items[5];
+    MENU *menu;
+    PANEL *menu_panel;
+    WINDOW *menu_win;
+    WINDOW *sub;
+    int h, w;
+
+    // Define menu items
+    items[0] = new_item("View", NULL);
+    items[1] = new_item("Edit", NULL);
+    items[2] = new_item("Insert", NULL);
+    items[3] = new_item("Delete", NULL);
+    items[4] = NULL;
+
+    // Create the menu
+    menu = new_menu((ITEM **)items);
+
+    // Size & position for popup menu window
+    getmaxyx(status_win, h, w);
+    int menu_h = 3;         // 1 row for items + border
+    int menu_w = w - 4;     // slightly narrower than status_win
+    int starty = 2;         // below top border/title
+    int startx = 2;
+
+    menu_win = newwin(menu_h, menu_w, starty, startx);
+    box(menu_win, 0, 0);
+
+    // Subwindow for items inside menu_win
+    sub = derwin(menu_win, 1, menu_w - 2, 1, 1);
+    set_menu_win(menu, menu_win);
+    set_menu_sub(menu, sub);
+    set_menu_format(menu, 1, 4);  // horizontal
+    set_menu_mark(menu, "");      // no arrows
+    keypad(menu_win, TRUE);
+
+    // Create panel so it appears above status_win
+    menu_panel = new_panel(menu_win);
+    top_panel(menu_panel);
+    update_panels();
+    doupdate();
+
+    post_menu(menu);
+    wrefresh(menu_win);
+
+    // Event loop
+    int c;
+    while ((c = wgetch(menu_win)) != 'q') {
+        switch (c) {
+            case KEY_LEFT:
+                menu_driver(menu, REQ_LEFT_ITEM);
+                break;
+            case KEY_RIGHT:
+                menu_driver(menu, REQ_RIGHT_ITEM);
+                break;
+            case 10: // Enter
+                mvwprintw(status_win, h - 2, 2,
+                          "Selected: %s", item_name(current_item(menu)));
+                wclrtoeol(status_win);
+                wrefresh(status_win);
+                break;
+        }
+        wrefresh(sub);
+        update_panels();
+        doupdate();
+    }
+
+    // Cleanup
+    unpost_menu(menu);
+    free_menu(menu);
+    for (int i = 0; i < 4; i++)
+        free_item(items[i]);
+
+    hide_panel(menu_panel);
+    del_panel(menu_panel);
+    delwin(menu_win);
+}
+
+// dupwin()/copywin() version
+void create_view_menu(WINDOW *status_win)
+{
+    ITEM *items[5];
+    MENU *menu;
+    WINDOW *menu_win, *menu_sub;
+    WINDOW *backup;
+    int h, w;
+
+    // Define menu items
+    items[0] = new_item("View", NULL);
+    items[1] = new_item("Edit", NULL);
+    items[2] = new_item("Insert", NULL);
+    items[3] = new_item("Delete", NULL);
+    items[4] = NULL;
+
+    // Create the menu
+    menu = new_menu((ITEM **)items);
+
+    // Get status window size
+    getmaxyx(status_win, h, w);
+
+    // Backup the status window
+    backup = dupwin(status_win);
+
+    // Create a separate window for the menu
+    int menu_h = 3;           // 1 row for items + border
+    int menu_w = w - 4;
+    int starty = 2;
+    int startx = 2;
+    menu_win = newwin(menu_h, menu_w, starty, startx);
+    box(menu_win, 0, 0);
+
+    // Subwindow inside menu_win for menu items
+    menu_sub = derwin(menu_win, 1, menu_w - 2, 1, 1);
+    set_menu_win(menu, menu_win);
+    set_menu_sub(menu, menu_sub);
+    set_menu_format(menu, 1, 4); // horizontal
+    set_menu_mark(menu, "");     // no arrows
+
+    // Enable input on the menu window
+    keypad(menu_win, TRUE);
+
+    // Post the menu
+    post_menu(menu);
+    wrefresh(menu_win);
+    wrefresh(menu_sub);
+
+    // Event loop
+    int c;
+    while ((c = wgetch(menu_win)) != 'q') {
+        switch (c) {
+            case KEY_LEFT: menu_driver(menu, REQ_LEFT_ITEM); break;
+            case KEY_RIGHT: menu_driver(menu, REQ_RIGHT_ITEM); break;
+            case 10: // Enter
+                mvwprintw(status_win, h - 2, 2,
+                          "Selected: %s", item_name(current_item(menu)));
+                wclrtoeol(status_win);
+                wrefresh(status_win);
+                break;
+        }
+        wrefresh(menu_sub);
+        wrefresh(menu_win);
+    }
+
+    // Cleanup: remove menu and restore original content
+    unpost_menu(menu);
+    free_menu(menu);
+    for (int i = 0; i < 4; i++)
+        free_item(items[i]);
+
+    // Restore status window content
+    copywin(backup, status_win, 0, 0, 0, 0, h - 1, w - 1, 0);
+    wrefresh(status_win);
+
+    delwin(menu_sub);
+    delwin(menu_win);
+    delwin(backup);
+}
+
+
+
+

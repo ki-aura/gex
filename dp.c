@@ -1,7 +1,8 @@
 #include "dp.h"
 
 // Debug Panel
-// usage:  sprintf(tmp, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
+// usage: 
+// DP_ON=true; sprintf(tmp, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
 
 void DP(const char *msg) 
 {

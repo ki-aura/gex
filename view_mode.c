@@ -3,7 +3,7 @@
 #include "gex.h"
 
 
-void move_view(int k)
+void handle_view_keys(int k)
 {
 //DP("in move mode");
 DP_ON = false;
@@ -53,7 +53,8 @@ DP_ON = false;
 	}
 
 	// boundary conditions
-	if ((hex.v_start + hex.grid) >= app.fsize) 
+	if ((hex.v_start >= app.fsize) ||
+			((hex.v_start + hex.grid) >= app.fsize))
 		hex.v_start = app.fsize - hex.grid;
 	
 	if (app.fsize <= (unsigned long)hex.grid) 
@@ -115,31 +116,9 @@ void populate_grids()
 	}
 }
 
-void refresh_status()
-{
-	box(status.win, 0, 0);
-	
-	mvwprintw(status.win, 1, 1, "Mode %s Fsize %i offset %i to %i       ", app_mode_desc[app.mode], 
-					app.fsize, hex.v_start, hex.v_end);
-	mvwprintw(status.win, 2, 1, "Screen: %d rows, %d cols, grid %dx%d=%d", app.rows, app.cols, 
-					hex.digits, hex.rows, hex.grid);
-	wnoutrefresh(status.win);
-}
-
-void refresh_helper()
-{
-	box(helper.win, 0, 0);
-	
-	mvwprintw(helper.win, 1, 1, "Modes: 'q'uit 'i'nsert 'e'dit 'd'elete 't'est Esc view"); 
-	mvwprintw(helper.win, 2, 1, helper.helpmsg);
-	wnoutrefresh(helper.win);
-}
 
 void refresh_hex()
 {
-DP_ON = false;
-sprintf(tmp, "upd hex %d %d %d ", hex.grid, hex.digits, (int)hex.v_start); DP(tmp); 
-
 	box(hex.win, 0, 0);
 
 	int hr=1; // offset print row on grid. 1 avoids the borders
@@ -157,7 +136,6 @@ sprintf(tmp, "upd hex %d %d %d ", hex.grid, hex.digits, (int)hex.v_start); DP(tm
 		hc = 1;
 		hr++;
 	}
-
 	wnoutrefresh(hex.win);
 }
 
@@ -186,7 +164,7 @@ void update_all_window_contents()
 	populate_grids();
 
 	refresh_status();
-	refresh_helper();
+	refresh_helper("Options: quit insert edit delete test goto");
 	refresh_hex();
 	refresh_ascii();
 
@@ -236,11 +214,9 @@ void create_windows()
   // Check for minimum screen size to prevent crashes
 	if (app.too_small) {
 		// If the screen is too small, just display a message and return
-	mvprintw(app.rows / 2, (app.cols - 45) / 2, "Screen is too small. Please resize to continue.");
+		mvprintw(app.rows / 2, (app.cols - 45) / 2, "Screen is too small. Please resize to continue.");
 		refresh(); // refresh becuase i'm writing to main screen
-	} else 
-	{
-	
+	} else 	{
 		// Create new windows based on the new dimensions
 		status.win = newwin(status.height, status.width, 0, 0);
 		helper.win = newwin(helper.height, helper.width, app.rows - helper.height, 0);
@@ -255,7 +231,7 @@ void create_windows()
 	}
 
 	// simulate a move so that the changes in the grid size are reflected 
-	move_view(KEY_ESC);
+	handle_view_keys(KEY_ESC);
 	
 	// populate the windows
 	update_all_window_contents();
@@ -290,12 +266,12 @@ void goto_byte()
 	char *endptr;
 	char input_str[256] = "";
 	unsigned long input_val;
+ 	msg=malloc(60);
  	
-	msg=malloc(60);
 	sprintf(msg, "Goto range between 0 & %lu", (unsigned long)app.fsize);
 	
 	int msg_len = strlen(msg);
-	int win_h = 5;                   // fixed height
+	int win_h = 4;                   // fixed height
 	int win_w = msg_len + 4;         // width based on message
 	if (win_w < 20) win_w = 20;      // minimum width
 	
@@ -309,8 +285,8 @@ void goto_byte()
 	
 	// Draw border and message
 	box(popup, 0, 0);
-	mvwprintw(popup, 2, 1, "%s", msg);
-	mvwprintw(popup, 3, 1, "Byte:");
+	mvwprintw(popup, 1, 1, "%s", msg);
+	mvwprintw(popup, 2, 1, "Byte:");
 	
 	// Show it
 	wrefresh(popup);
@@ -319,7 +295,7 @@ void goto_byte()
 
 	// Move the cursor to the input position and get input
 	echo();
-	mvwgetnstr(popup, 3, 7, input_str, sizeof(input_str) - 1);
+	mvwgetnstr(popup, 2, 7, input_str, sizeof(input_str) - 1);
 	noecho();
 	
 	// Convert the string to an integer
@@ -336,7 +312,7 @@ void goto_byte()
 
 	// set this as the new view start
 	hex.v_start = input_val;
-
+	
 	// Clean up
 	free(msg);
 	del_panel(panel);

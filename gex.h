@@ -15,13 +15,19 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <limits.h>
+#include <menu.h>
 
 // keys we need that aren't already defined by ncurses
 #define KEY_ESC 27
 
 // template functions
-void handlekeys(int k);
+void handle_global_keys(int k);
 void initial_setup();
+void final_close();
+void refresh_helper(char *helpmsg);
+void refresh_status();
+void create_view_menu(WINDOW *status_win);
+
 
 // Overall (non-window) screen attributes & app status
 typedef enum {
@@ -30,7 +36,6 @@ typedef enum {
     INSERT_MODE,
     DELETE_MODE,
     VIEW_MODE, 
-    TEST_KEYS,
 } app_mode;
 
 typedef struct {
@@ -63,7 +68,6 @@ typedef struct {
 
 typedef struct {
 	WINDOW *win;
-	char *helpmsg;	
 	int height;	// grid height including border
 	int width;	// grid width including border
 	int digits;	// grid width in hex digits (i.e. 3 chars / digit)
