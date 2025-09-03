@@ -1,5 +1,4 @@
 #include "gex.h"
-#include "dp.h"
 #include "file_handling.h"
 #include "view_mode.h"
 #include "edit_mode.h"
@@ -50,7 +49,7 @@ void final_close()
 void handle_global_keys(int k)
 {
 	// first check if we're Esc out of any non-view mode
-	if (k==KEY_ESC) {
+	if (k==KEY_ESCAPE) {
 		// exit gracefully from non-view modes
 		switch (app.mode){
 	    	case EDIT_MODE:
@@ -67,7 +66,7 @@ void handle_global_keys(int k)
 		}
 		// set is back to view mode
 		app.mode=VIEW_MODE;
-		update_all_window_contents();
+		v_update_all_windows();
 		doupdate();
 		}
 	
@@ -88,14 +87,14 @@ void handle_global_keys(int k)
 			app.mode=DELETE_MODE; 
 			break;
 		case 'g': 
-			goto_byte(); 	// popup
-			handle_view_keys(k);	//force recalcs using move
-			update_all_window_contents();
+			v_goto_byte(); 	// popup
+			v_handle_keys(k);	//force recalcs using move
+			v_update_all_windows();
 			doupdate();
 			break;
 		default: 	// otherwise hand off for movement keys
-			handle_view_keys(k); 
-			update_all_window_contents();
+			v_handle_keys(k); 
+			v_update_all_windows();
 			doupdate();
 			break;
 		}	
@@ -131,6 +130,37 @@ void refresh_helper(char *helpmsg)
 	wnoutrefresh(helper.win);
 }
 
+void byte_to_hex(unsigned char b, char *out) 
+{
+    const char hex_digits[] = "0123456789ABCDEF";
+    out[0] = hex_digits[b >> 4];    // high nibble
+    out[1] = hex_digits[b & 0x0F];  // low nibble
+    // out[2] is NOT null-terminated — just 2 chars
+}
+
+char byte_to_ascii(unsigned char b) 
+{
+    return (isprint(b) ? (char)b : '.');
+}
+
+int hex_char_to_value(char c) 
+{
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'A' && c <= 'F') return 10 + (c - 'A');
+    if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
+    return -1;  // invalid hex char
+}
+
+unsigned char hex_to_byte(char high, char low) 
+{
+    int hi = hex_char_to_value(high);
+    int lo = hex_char_to_value(low);
+    if (hi < 0 || lo < 0) return 0; // or handle error
+    return (hi << 4) | lo;
+}
+
+
+
 int main(int argc, char *argv[]) 
 {
 	// Initial app setup
@@ -151,7 +181,7 @@ int main(int argc, char *argv[])
 				// if not in view mode when the window is resized, then this could
 				// cause issues, so simulate this by setting the character to Esc (27)
 				// and calling handle_global_keys
-				handle_global_keys(KEY_ESC);		
+				handle_global_keys(KEY_ESCAPE);		
 				// Re-create all windows on resize
 				create_windows();
 			} else {

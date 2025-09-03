@@ -1,9 +1,8 @@
-#include "view_mode.h"
-#include "dp.h"
 #include "gex.h"
+#include "view_mode.h"
 
 
-void handle_view_keys(int k)
+void v_handle_keys(int k)
 {
 //DP("in move mode");
 DP_ON = false;
@@ -65,36 +64,7 @@ DP_ON = false;
 	if (hex.v_end >= app.fsize) hex.v_end = app.fsize -1;
 }
 
-void byte_to_hex(unsigned char b, char *out) 
-{
-    const char hex_digits[] = "0123456789ABCDEF";
-    out[0] = hex_digits[b >> 4];    // high nibble
-    out[1] = hex_digits[b & 0x0F];  // low nibble
-    // out[2] is NOT null-terminated — just 2 chars
-}
-
-char byte_to_ascii(unsigned char b) 
-{
-    return (isprint(b) ? (char)b : '.');
-}
-
-int hex_char_to_value(char c) 
-{
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'A' && c <= 'F') return 10 + (c - 'A');
-    if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
-    return -1;  // invalid hex char
-}
-
-unsigned char hex_to_byte(char high, char low) 
-{
-    int hi = hex_char_to_value(high);
-    int lo = hex_char_to_value(low);
-    if (hi < 0 || lo < 0) return 0; // or handle error
-    return (hi << 4) | lo;
-}
-
-void populate_grids()
+void v_populate_grids()
 {
 	free(hex.gc);
 	free(ascii.gc);
@@ -117,7 +87,7 @@ void populate_grids()
 }
 
 
-void refresh_hex()
+void v_refresh_hex()
 {
 	box(hex.win, 0, 0);
 
@@ -139,7 +109,7 @@ void refresh_hex()
 	wnoutrefresh(hex.win);
 }
 
-void refresh_ascii()
+void v_refresh_ascii()
 {
 	box(ascii.win, 0, 0);
 	
@@ -159,14 +129,14 @@ void refresh_ascii()
 	wnoutrefresh(ascii.win);
 }
 
-void update_all_window_contents()
+void v_update_all_windows()
 {
-	populate_grids();
+	v_populate_grids();
 
 	refresh_status();
 	refresh_helper("Options: quit insert edit delete test goto");
-	refresh_hex();
-	refresh_ascii();
+	v_refresh_hex();
+	v_refresh_ascii();
 
 	doupdate();
 }
@@ -231,10 +201,10 @@ void create_windows()
 	}
 
 	// simulate a move so that the changes in the grid size are reflected 
-	handle_view_keys(KEY_ESC);
+	v_handle_keys(KEY_ESCAPE);
 	
 	// populate the windows
-	update_all_window_contents();
+	v_update_all_windows();
 }
 
 // Function to delete all windows
@@ -258,7 +228,7 @@ void delete_windows()
 	}
 }
 
-void goto_byte() 
+void v_goto_byte() 
 {
 	int rows, cols;
 	getmaxyx(stdscr, rows, cols);

@@ -16,16 +16,30 @@
 #include <unistd.h>
 #include <limits.h>
 #include <menu.h>
+#include "dp.h"
+
 
 // keys we need that aren't already defined by ncurses
-#define KEY_ESC 27
+#define KEY_ESCAPE 27
+#define KEY_MAC_ENTER 10	// KEY_ENTER already defined as send key for terminal
+#define KEY_TAB 9
+#define KEY_SPACE 32
+
 
 // template functions
+// helpers
+void byte_to_hex(unsigned char b, char *out);
+char byte_to_ascii(unsigned char b);
+int hex_char_to_value(char c);
+unsigned char hex_to_byte(char high, char low);
+// main loop
 void handle_global_keys(int k);
 void initial_setup();
 void final_close();
 void refresh_helper(char *helpmsg);
 void refresh_status();
+
+// testing...
 void create_view_menu(WINDOW *status_win);
 
 

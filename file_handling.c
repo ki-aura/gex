@@ -1,6 +1,5 @@
-#include "file_handling.h"
-#include "dp.h"
 #include "gex.h"
+#include "file_handling.h"
 
 bool open_file(int argc, char *argv[])
 {
