@@ -7,7 +7,7 @@
 
 void DP(const char *msg) 
 {
-	if(DP_ON){
+//	if(DP_ON){
 	    int rows, cols;
 	    getmaxyx(stdscr, rows, cols);
 	
@@ -40,6 +40,6 @@ void DP(const char *msg)
 	
 	    update_panels();
 	    doupdate();
-	}
+//	}
 }
 

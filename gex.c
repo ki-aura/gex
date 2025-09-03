@@ -44,12 +44,13 @@ void final_close()
 
 void handle_global_keys(int k)
 {
-	// first check if we're Esc out of any non-view mode
-	if (k==KEY_ESCAPE) {
+	// first check if we're Esc out of any non-view mode or being forced out
+	// due to a screen resize
+	if ((k==KEY_ESCAPE) || (k==KEY_RESIZE)) {
 		// exit gracefully from non-view modes
 		switch (app.mode){
 	    	case EDIT_MODE:
-	    		end_edit_mode();
+	    		end_edit_mode(k);
 			break;
 		case INSERT_MODE:
 							
@@ -180,8 +181,10 @@ bool popup_question(char *qline1, char *qline2, popup_types pt, app_mode mode)
 	
 	// Draw border and message
 	box(popup, 0, 0);
+	wattron(popup, A_BOLD);
 	mvwprintw(popup, 1, 1, qline1);
 	mvwprintw(popup, 2, 1, qline2);
+	wattroff(popup, A_BOLD);
 	
 	// Show it
 	curs_set(0);
@@ -239,9 +242,8 @@ int main(int argc, char *argv[])
 			{
 			if (ch == KEY_RESIZE) {
 				// if not in view mode when the window is resized, then this could
-				// cause issues, so simulate this by setting the character to Esc (27)
-				// and calling handle_global_keys
-				handle_global_keys(KEY_ESCAPE);		
+				// cause issues so let global key handler deal with it
+				handle_global_keys(ch);		
 				// Re-create all windows on resize
 				create_windows();
 			} else {

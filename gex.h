@@ -57,20 +57,7 @@ typedef struct {
 	struct stat fs;		// file stat
 } appdef;
 
-
 // Window definitions
-typedef struct {
-	int height;
-	int width;
-	WINDOW *win;
-} status_windef;
-
-typedef struct {
-	int height;
-	int width;
-	WINDOW *win;
-} helper_windef;
-
 typedef struct {
 	WINDOW *win;
 	int height;	// grid height including border
@@ -81,9 +68,14 @@ typedef struct {
 	// file handling and viewing
 	unsigned long v_start;	// file offset location of start of grid
 	unsigned long v_end;	// file location of end of grid
-	char *gc;	// grid contents
+	char *gc;	// viewable grid contents
 	// buffers for edit and cursor tracker variables
-	char *gc_copy;
+	char *gc_copy;	// copy of viewable grid contents
+	unsigned char *map_copy; 	// copy of map that relates to the screen
+	int map_copy_len;
+	int max_row;	// this is the max row we can edit if screen > file size
+	int max_col; 	// this is the max col on the max row we can edit if screen > file size
+	int max_digit; // this is the max digit on the max row we can edit if screen > file size
 	int cur_row;
 	int cur_col;
 	int cur_digit;	// which hex digit within the col
@@ -101,6 +93,19 @@ typedef struct {
 	char *gc_copy;
 	// don't need cur_row or cur_col as same as hex.row and hex.digits
 } ascii_windef;
+
+typedef struct {
+	int height;
+	int width;
+	WINDOW *win;
+} status_windef;
+
+typedef struct {
+	int height;
+	int width;
+	WINDOW *win;
+} helper_windef;
+
 
 // helper functions
 bool popup_question(char *qline1, char *qline2, popup_types pt, app_mode mode);
