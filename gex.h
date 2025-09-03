@@ -26,43 +26,35 @@
 #define KEY_SPACE 32
 
 
-// template functions
-// helpers
-void byte_to_hex(unsigned char b, char *out);
-char byte_to_ascii(unsigned char b);
-int hex_char_to_value(char c);
-unsigned char hex_to_byte(char high, char low);
-// main loop
-void handle_global_keys(int k);
-void initial_setup();
-void final_close();
-void refresh_helper(char *helpmsg);
-void refresh_status();
-
-// testing...
-void create_view_menu(WINDOW *status_win);
+// types of popup question
+typedef enum { 	
+	PTYPE_YN,
+	PTYPE_CONTINUE,
+} popup_types;
 
 
-// Overall (non-window) screen attributes & app status
 typedef enum {
-	// first modes that need a visible description
     EDIT_MODE, 
     INSERT_MODE,
     DELETE_MODE,
     VIEW_MODE, 
 } app_mode;
 
+// Overall (non-window) screen attributes & app status
 typedef struct {
+	// stdscr details
 	int cols;
 	int rows;
 	bool too_small; 	// less than 2 hex rows and 16 hex chars wide
-	app_mode mode;
+	// general 
+	bool in_hex;		// track which pane we're in during edit
+	app_mode mode;		// view, edit etc
+	// file & mem handling
 	size_t fsize;		// file size
 	char *fname;		// file name
 	unsigned char *map;  	// mmap base
 	int fd;			// file descriptor
 	struct stat fs;		// file stat
-	bool hex_pane_active;	// track which pane we're in
 } appdef;
 
 
@@ -77,7 +69,6 @@ typedef struct {
 	int height;
 	int width;
 	WINDOW *win;
-	char *helpmsg;
 } helper_windef;
 
 typedef struct {
@@ -85,19 +76,48 @@ typedef struct {
 	int height;	// grid height including border
 	int width;	// grid width including border
 	int digits;	// grid width in hex digits (i.e. 3 chars / digit)
-	int rows;	// grid height
+	int rows;	// grid height excluding border
 	int grid;	// grid size in total hex digits (portion of file)
+	// file handling and viewing
 	unsigned long v_start;	// file offset location of start of grid
 	unsigned long v_end;	// file location of end of grid
 	char *gc;	// grid contents
+	// buffers for edit and cursor tracker variables
+	char *gc_copy;
+	int cur_row;
+	int cur_col;
+	int cur_digit;	// which hex digit within the col
+	bool is_lnib;	// are we on the left nibble
+	bool changes_made;	// have we changed anything?
 } hex_windef;
 
 typedef struct {
+	WINDOW *win;
 	int height;
 	int width;
-	WINDOW *win;
 	char *gc;
+	// don't need digits, grid or v_start/v_end as same as hex
+	// buffers for edit
+	char *gc_copy;
+	// don't need cur_row or cur_col as same as hex.row and hex.digits
 } ascii_windef;
+
+// helper functions
+bool popup_question(char *qline1, char *qline2, popup_types pt, app_mode mode);
+void byte_to_hex(unsigned char b, char *out);
+char byte_to_ascii(unsigned char b);
+int hex_char_to_value(char c);
+unsigned char hex_to_byte(char high, char low);
+// main loop
+void handle_global_keys(int k);
+void initial_setup();
+void final_close();
+void refresh_helper(char *helpmsg);
+void refresh_status();
+// testing...
+void create_view_menu(WINDOW *status_win);
+
+
 
 extern appdef app;
 extern status_windef status;

@@ -230,14 +230,12 @@ void delete_windows()
 
 void v_goto_byte() 
 {
-	int rows, cols;
-	getmaxyx(stdscr, rows, cols);
-	char *msg;
 	char *endptr;
 	char input_str[256] = "";
 	unsigned long input_val;
- 	msg=malloc(60);
  	
+	char *msg;
+ 	msg=malloc(60);
 	sprintf(msg, "Goto range between 0 & %lu", (unsigned long)app.fsize);
 	
 	int msg_len = strlen(msg);
@@ -245,8 +243,8 @@ void v_goto_byte()
 	int win_w = msg_len + 4;         // width based on message
 	if (win_w < 20) win_w = 20;      // minimum width
 	
-	int starty = (rows - win_h) / 2;
-	int startx = (cols - win_w) / 2;
+	int starty = (app.rows - win_h) / 2;
+	int startx = (app.cols - win_w) / 2;
 	
 	// Create window and panel
 	WINDOW *popup = newwin(win_h, win_w, starty, startx);

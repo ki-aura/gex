@@ -2,36 +2,151 @@
 #include "edit_mode.h"
 
 
-void handle_edit_keys(int k)
+void e_handle_keys(int k)
 {
-//DP("in move mode");
-DP_ON = true;
-
 	switch(k){
 	// simple cases for home and end
 	case KEY_HOME:
+		// move start of current row
+		hex.cur_col=1;
+		hex.cur_digit=1;	// first hex digit (takes 3 spaces)
+		hex.is_lnib = true;	// left nibble of that digit
 		;break;
+
 	case KEY_END:
+		// move end of current row
+		hex.cur_col = (hex.digits*3) - 2; // l nibble of last digit
+		hex.cur_digit = hex.digits;	// first hex digit (takes 3 spaces)
+		hex.is_lnib = true;	// left nibble of that digit
 		break;
+
 	case KEY_LEFT:
+		// 1 hex.digits = lnib rnib space
+		// boundary is 1 to hex.width -1
+		if(app.in_hex){
+			if (!hex.is_lnib){
+				// we can safely move to left nib. don't move ascii cursor
+				hex.cur_col--;
+				hex.is_lnib=true;
+			} else {
+				// we're on lef nib. move back 2 unless at start of row, 
+				// otherwise wrap back to end of row
+				if(hex.cur_digit > 1){
+					hex.cur_col-=2;
+					hex.cur_digit--;
+					hex.is_lnib=false;
+				} else {
+					hex.cur_col=(hex.digits*3) - 1; //1 this time as go to right nibble
+					hex.cur_digit=hex.digits;	// first hex digit (takes 3 spaces)
+					hex.is_lnib = false;	// left nibble of that digit
+				}
+			}
+		
+		} else { // we're in ascii pane
+			if(hex.cur_digit > 1){
+				hex.cur_col-=3;
+				hex.cur_digit--;
+				hex.is_lnib = true;
+			} else { // wrap col
+					hex.cur_col=(hex.digits*3) - 2;
+					hex.cur_digit=hex.digits;	// last hex digit (takes 3 spaces)
+					hex.is_lnib = true;	// left nibble of that digit
+			}
+		}
+
 		break;
+		
 	case KEY_RIGHT:
+		// 1 hex.digits = lnib rnib space
+		// boundary is 1 to hex.width -1
+		if(app.in_hex){
+			if (hex.is_lnib){
+				// we can safely move to right nib. don't move ascii cursor
+				hex.cur_col++;
+				hex.is_lnib=false;
+			} else {
+				// we're on right nib. move 2 unless at end of row, 
+				// otherwise wrap back to start of row
+				if(hex.cur_digit < hex.digits){
+					hex.cur_col+=2;
+					hex.cur_digit++;
+					hex.is_lnib=true;
+				} else {
+					hex.cur_col=1;
+					hex.cur_digit=1;	// first hex digit (takes 3 spaces)
+					hex.is_lnib = true;	// left nibble of that digit
+				}
+			}		
+		} else { // we're in ascii pane
+			if(hex.cur_digit < hex.digits){
+				hex.cur_col+=3;
+				hex.cur_digit++;
+				hex.is_lnib = true;
+			} else { // wrap col
+					hex.cur_col=1;
+					hex.cur_digit=1;	// first hex digit (takes 3 spaces)
+					hex.is_lnib = true;	// left nibble of that digit
+			}
+		}
 		break;
+		
 	case KEY_UP:
+		if(hex.cur_row > 1) 
+			hex.cur_row--;
+		else 
+			hex.cur_row = hex.rows;
 		break;
+		
 	case KEY_DOWN:
+		if(hex.cur_row < hex.rows)
+			hex.cur_row++;
+		else
+			hex.cur_row = 1;
 		break;
+
+	case KEY_NPAGE:
+		hex.cur_row = hex.rows;
+		break;
+
+	case KEY_PPAGE:
+		hex.cur_row = 1;
+		break;
+		
+	// do stuff
 	case KEY_MAC_ENTER:
+		e_save_changes();
 		break;
-	case KEY_ESCAPE:
-		break;
+		
 	case KEY_TAB:
-		break;
+		//ensure on left nib on ascii pane return
+		if(!hex.is_lnib){
+			hex.cur_col--;
+			hex.is_lnib=true;
+		}
+		// flip panes
+		app.in_hex = !app.in_hex;
+		break; 
+
+// FOR DEBUG ONLY	
+case KEY_SPACE:
+hex.changes_made = true;	
+break;
+			
 	default: 
+		// handle non-movement / special keys 
 		break;
 	}
 
 	// boundary conditions
+	
+	// move the cursor
+	if (app.in_hex) {
+		wmove(hex.win, hex.cur_row, hex.cur_col);
+		wrefresh(hex.win);
+	} else {
+		wmove(ascii.win, hex.cur_row, hex.cur_digit);
+		wrefresh(ascii.win);	
+	}
 }
 
 void init_edit_mode()
@@ -40,17 +155,113 @@ void init_edit_mode()
 	refresh_status(); wrefresh(status.win);
 	refresh_helper("Options: Escape Enter Tab"); wrefresh(helper.win);
 	
-	// put a cursor up
+	// grab a screen copy
+	e_copy_screen();
+	e_refresh_hex();
+	e_refresh_ascii();
+	doupdate();
+	
+	// set edit mode coming in defaults
+	app.in_hex = true;	// start in hex screen
+	hex.changes_made = false;
+	// cursor starting location
+	hex.cur_row=1;
+	hex.cur_col=1;
+	hex.cur_digit=1;	// first hex digit (takes 3 spaces)
+	hex.is_lnib = true;	// left nibble of that digit
+	
+	// show cursor
 	curs_set(2);
-	wmove(hex.win, 1, 1);
+	wmove(hex.win, hex.cur_row, hex.cur_col);
 	wrefresh(hex.win);
 }
 
 void end_edit_mode()
 {
-	curs_set(0);
-
+	if( popup_question("Are you sure you want to exit Edit mode?",
+			   "All changes will be lost (y/n)", PTYPE_YN, EDIT_MODE) ){
+		// clean up
+		curs_set(0);
+		free(hex.gc_copy);
+		free(ascii.gc_copy);
+		// pass control back to main loop by setting mode back to view
+		app.mode = VIEW_MODE;
+	}	
 }
+
+void e_copy_screen()
+{
+	hex.gc_copy = malloc((hex.grid * 3) + 1);
+	ascii.gc_copy = malloc(hex.grid + 1);
+
+	strcpy(hex.gc_copy, hex.gc);
+	strcpy(ascii.gc_copy, ascii.gc);
+	
+	// debug only
+/*	ascii.gc_copy[0] = 'E';
+	ascii.gc_copy[1] = 'D';
+	ascii.gc_copy[2] = '!';
+
+	hex.gc_copy[0] = 'E';
+	hex.gc_copy[1] = 'D';
+	hex.gc_copy[2] = '!';
+*/
+}
+
+void e_refresh_hex()
+{
+	box(hex.win, 0, 0);
+
+	int hr=1; // offset print row on grid. 1 avoids the borders
+	int hc=1;
+	int i=0; 
+	int grid_points = hex.grid * 3;
+	int row_points = hex.digits * 3;
+	while(i<grid_points ){
+		// print as much as a row as we can
+		while ((i < grid_points) && (hc <= row_points)){
+			mvwprintw(hex.win, hr, hc, "%c", hex.gc_copy[i]);
+			hc++;
+			i++;
+		}
+		hc = 1;
+		hr++;
+	}
+	wnoutrefresh(hex.win);
+}
+
+void e_refresh_ascii()
+{
+	box(ascii.win, 0, 0);
+	
+	int hr=1; // offset print row on grid. 1 avoids the borders
+	int hc=1;
+	int i=0; 
+	while(i<hex.grid){
+		// print as much as a row as we can
+		while ((i < hex.grid) && (hc <= hex.digits)){
+			mvwprintw(ascii.win, hr, hc, "%c", ascii.gc_copy[i]);
+			hc++;
+			i++;
+		}
+		hc = 1;
+		hr++;
+	}
+	wnoutrefresh(ascii.win);
+}
+
+void e_save_changes(){
+	if (!hex.changes_made)
+		popup_question("No changes made",
+			"Press any key to continue", PTYPE_CONTINUE, EDIT_MODE);
+	else if(popup_question("Are you sure you want to save changes?",
+			"This action can not be undone (y/n)", PTYPE_YN, EDIT_MODE)){
+		// save changes 
+		
+		hex.changes_made = FALSE;
+	}
+}
+
 
 ///////////////////////////////////////
 //////// ADDS cursor and nibble handling

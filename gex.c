@@ -27,10 +27,6 @@ void initial_setup()
 
 	// set up global variable for debug panel
 	tmp = malloc(200);
-
-	// Helper window 
-	helper.helpmsg=malloc(40);
-	strcpy(helper.helpmsg, "Last Key:");
 	
 	// Hex window
 	hex.v_start = 0;
@@ -62,17 +58,20 @@ void handle_global_keys(int k)
 			// call end delete mode routine
 			break;	
 		case VIEW_MODE: 
+			// nothing to do in edit mode
 			break; 
 		}
-		// set is back to view mode
-		app.mode=VIEW_MODE;
-		v_update_all_windows();
-		doupdate();
+		// if we're still in view mode, then edit / delete etc have cancelled 
+		// the Esc so we need to leave screen handling to them
+		if(app.mode == VIEW_MODE) {
+			v_update_all_windows();
+			doupdate();
 		}
+	}
 	
-	// check if we've initiated a new mode
 	switch(app.mode){
 	case VIEW_MODE:
+		// check if we've initiated a new mode
 		switch(k){
 		// special keys to change mode
 		case 'e': 
@@ -81,18 +80,21 @@ void handle_global_keys(int k)
 			break;
 		case 'i': 
 			app.mode=INSERT_MODE; 
+			// TEST!!
 			create_view_menu(status.win);
 			break;
 		case 'd': 
 			app.mode=DELETE_MODE; 
 			break;
+		// g is part of view mode
 		case 'g': 
-			v_goto_byte(); 	// popup
+			v_goto_byte(); 	// popup gets new hex.v_start
 			v_handle_keys(k);	//force recalcs using move
 			v_update_all_windows();
 			doupdate();
 			break;
-		default: 	// otherwise hand off for movement keys
+		// otherwise for all other keys hand off for view movement keys
+		default: 	
 			v_handle_keys(k); 
 			v_update_all_windows();
 			doupdate();
@@ -101,7 +103,7 @@ void handle_global_keys(int k)
 		break;
 		
     	case EDIT_MODE:
-		handle_edit_keys(k);
+		e_handle_keys(k);
 		break;
 
     	case INSERT_MODE:
@@ -126,8 +128,12 @@ void refresh_status()
 void refresh_helper(char *helpmsg)
 {
 	box(helper.win, 0, 0);
-	mvwprintw(helper.win, 1, 1, helpmsg); 
+	char *help_line = malloc(helper.width -1 ); // -2 to exclude borders, +1 for null
+	memset(help_line, ' ', helper.width - 2);
+	mvwprintw(helper.win, 1, 1, help_line);   // blank it out
+	mvwprintw(helper.win, 1, 1, helpmsg);     // and fill it new
 	wnoutrefresh(helper.win);
+	free(help_line);
 }
 
 void byte_to_hex(unsigned char b, char *out) 
@@ -157,6 +163,60 @@ unsigned char hex_to_byte(char high, char low)
     int lo = hex_char_to_value(low);
     if (hi < 0 || lo < 0) return 0; // or handle error
     return (hi << 4) | lo;
+}
+
+bool popup_question(char *qline1, char *qline2, popup_types pt, app_mode mode) 
+{
+	bool answer;
+	int ch;
+	int qlen;
+	// make sure we size to the longer of the question lines 
+	qlen = (strlen(qline1) > strlen(qline2)) ? strlen(qline1) : strlen(qline2);
+	// Create window and panel
+	WINDOW *popup = newwin(4, (qlen+2), ((app.rows - 4) / 2), 
+					((app.cols - (qlen+2)) / 2));
+	PANEL  *panel = new_panel(popup);
+	keypad(popup, TRUE); // Enable keyboard input for the window
+	
+	// Draw border and message
+	box(popup, 0, 0);
+	mvwprintw(popup, 1, 1, qline1);
+	mvwprintw(popup, 2, 1, qline2);
+	
+	// Show it
+	curs_set(0);
+	wrefresh(popup);
+	update_panels();
+	doupdate();
+	
+	switch(pt){
+	case PTYPE_YN:
+		ch = wgetch(popup);
+		while ((ch != 'y') && (ch != 'n')) ch = wgetch(popup);
+		answer = (ch == 'y');
+		break;
+
+	case PTYPE_CONTINUE:
+		wgetch(popup);	
+		answer = true;
+		break;
+	}
+
+	// Clean up panel
+	del_panel(panel);
+	delwin(popup);	
+	update_panels();
+
+	// refresh edit mode
+	if(mode == EDIT_MODE){
+		curs_set(2);
+		e_refresh_hex();
+		e_refresh_ascii();
+		doupdate();
+	}
+
+	// popup an are you sure dialog
+	return answer;
 }
 
 
