@@ -1,0 +1,287 @@
+/* gex.c - minimal mmap-based hex editor using ncurses
+ * Features:
+ *  - Linux/UNIX C program
+ *  - ncurses screen handling, responds to terminal resize
+ *  - mmap + msync for file memory & sync
+ *  - Displays single screen: hex on left, ASCII on right, address column
+ *  - Minimum terminal size: 16 bytes width and 16 lines height
+ *  - Keyboard navigation: arrows, PageUp/PageDown, Home/End
+ *  - Tab switches between hex and ASCII panes
+ *  - Press 'E' to enter edit mode (hex-only), Esc to exit edit mode
+ *  - In edit mode only hex-side accepts hex-nibble input and overwrites bytes
+ *
+ * Compile: gcc -std=c99 -O2 -Wall -lncurses -o gex gex.c
+ * Usage: ./gex <filename>
+ * Note: This is intentionally minimal and doesn't implement insert/delete.
+ */
+
+#define _XOPEN_SOURCE 700
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <ncurses.h>
+#include <errno.h>
+#include <ctype.h>
+
+static const int MIN_BYTES_PER_LINE = 16;
+static const int MIN_LINES = 16;
+
+typedef struct {
+    int rows, cols;            // terminal size
+    int bytes_per_line;        // how many bytes to show per line
+    int lines;                 // number of data lines shown
+    off_t top_offset;          // file offset of first displayed byte
+    off_t cursor;              // absolute file offset of cursor
+    bool hex_pane;             // true => hex pane active, false => ascii pane
+    bool edit_mode;            // edit mode active
+    bool nibble_high;          // waiting for low/high nibble when editing
+    unsigned char nibble_val;  // stored high nibble
+    size_t file_size;
+    unsigned char *map;        // mmap base
+    int fd;
+    long page_size;
+    char *filename;
+} state_t;
+
+static void die(const char *msg) {
+    endwin();
+    perror(msg);
+    exit(EXIT_FAILURE);
+}
+
+static void draw_too_small(state_t *st) {
+    erase();
+    mvprintw(0,0,"Terminal too small. Need at least %d bytes width and %d lines height.", MIN_BYTES_PER_LINE, MIN_LINES);
+    mvprintw(2,0,"Current size: %d cols x %d rows", st->cols, st->rows);
+    mvprintw(4,0,"Resize terminal and try again.");
+    refresh();
+}
+
+static void recalc_layout(state_t *st) {
+    getmaxyx(stdscr, st->rows, st->cols);
+    // width = addr(8) + ": "(2) + hex(3*bytes) + " |"(2) + ascii(bytes)
+    int usable = st->cols - 12;
+    int max_bpl = usable / 4; // 3 chars hex + 1 char ascii
+    if (max_bpl < MIN_BYTES_PER_LINE)
+        st->bytes_per_line = MIN_BYTES_PER_LINE;
+    else
+        st->bytes_per_line = max_bpl;
+    st->lines = st->rows - 2; // keep one status line
+}
+
+static void sync_byte(state_t *st, off_t off) {
+    off_t page = (off_t)(off & ~(st->page_size - 1));
+    if (msync(st->map + page, st->page_size, MS_SYNC) < 0) {
+        mvprintw(st->rows-1, 0, "msync failed: %s", strerror(errno));
+        clrtoeol();
+    }
+}
+
+static void draw(state_t *st) {
+    erase();
+    int min_cols = 8 + 2 + (MIN_BYTES_PER_LINE * 3) + 2 + MIN_BYTES_PER_LINE;
+    if (st->cols < min_cols || st->rows < MIN_LINES) {
+        draw_too_small(st);
+        return;
+    }
+
+    int y = 0;
+    mvprintw(y++, 0, "file: %s   size: %zu    offset: 0x%08lx   mode: %s %s",
+             st->filename, st->file_size, (unsigned long)st->top_offset,
+             st->edit_mode ? "EDIT" : "NAV",
+             st->hex_pane ? "HEX" : "ASCII");
+
+    off_t off = st->top_offset;
+    for (int line = 0; line < st->lines && off < (off_t)st->file_size; ++line) {
+        mvprintw(y, 0, "%08lx: ", (unsigned long)off);
+        int x = 10;
+        for (int b = 0; b < st->bytes_per_line && off + b < (off_t)st->file_size; ++b) {
+            unsigned char val = st->map[off + b];
+            bool is_cursor = ((off + b) == st->cursor);
+            if (is_cursor && st->hex_pane) attron(A_REVERSE);
+            mvprintw(y, x, "%02X", val);
+            if (is_cursor && st->hex_pane) attroff(A_REVERSE);
+            x += 3;
+        }
+        int ascii_x = 10 + st->bytes_per_line * 3 + 2;
+        mvprintw(y, ascii_x - 2, "|");
+        for (int b = 0; b < st->bytes_per_line && off + b < (off_t)st->file_size; ++b) {
+            unsigned char val = st->map[off + b];
+            char ch = (isprint(val) ? (char)val : '.');
+            bool is_cursor = ((off + b) == st->cursor);
+            if (is_cursor && !st->hex_pane) attron(A_REVERSE);
+            mvaddch(y, ascii_x + b, ch);
+            if (is_cursor && !st->hex_pane) attroff(A_REVERSE);
+        }
+        y++;
+        off += st->bytes_per_line;
+    }
+    mvprintw(st->rows-1, 0, "Arrows: move  PgUp/PgDn  Home/End  Tab: switch pane  E: edit  Esc: exit edit  q: quit");
+    clrtoeol();
+    move(0,0);
+    refresh();
+}
+
+static void ensure_cursor_in_view(state_t *st) {
+    if (st->cursor < st->top_offset) {
+        st->top_offset = st->cursor - (st->cursor % st->bytes_per_line);
+    } else {
+        off_t last = st->top_offset + (off_t)st->lines * st->bytes_per_line;
+        if (st->cursor >= last) {
+            st->top_offset = st->cursor - (st->lines - 1) * st->bytes_per_line;
+            st->top_offset -= (st->top_offset % st->bytes_per_line);
+        }
+    }
+    if (st->top_offset < 0) st->top_offset = 0;
+    off_t max_top = (st->file_size > 0) ? (st->file_size - 1) : 0;
+    if (st->top_offset > max_top) st->top_offset = max_top - (max_top % st->bytes_per_line);
+}
+
+static void move_relative(state_t *st, long delta) {
+    off_t new = (off_t)((long)st->cursor + delta);
+    if (new < 0) new = 0;
+    if (new >= (off_t)st->file_size) new = st->file_size - 1;
+    st->cursor = new;
+    ensure_cursor_in_view(st);
+}
+
+static bool is_hex_digit(int c) {
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+static int hex_value(int c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
+    if (c >= 'A' && c <= 'F') return 10 + (c - 'A');
+    return -1;
+}
+
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file>\n", argv[0]);
+        return 1;
+    }
+
+    state_t st;
+    memset(&st, 0, sizeof(st));
+    st.filename = argv[1];
+    st.page_size = sysconf(_SC_PAGESIZE);
+
+    st.fd = open(argv[1], O_RDWR);
+    if (st.fd < 0) {
+        perror("open");
+        return 1;
+    }
+    struct stat sb;
+    if (fstat(st.fd, &sb) < 0) die("fstat");
+    st.file_size = sb.st_size;
+    if (st.file_size == 0) {
+        fprintf(stderr, "Cannot edit empty file\n");
+        close(st.fd);
+        return 1;
+    }
+    st.map = mmap(NULL, st.file_size, PROT_READ | PROT_WRITE, MAP_SHARED, st.fd, 0);
+    if (st.map == MAP_FAILED) die("mmap");
+
+    if (initscr() == NULL) {
+        fprintf(stderr, "initscr failed\n");
+        munmap(st.map, st.file_size);
+        close(st.fd);
+        return 1;
+    }
+    noecho();
+    cbreak();
+    keypad(stdscr, TRUE);
+    curs_set(0);
+
+    recalc_layout(&st);
+    st.top_offset = 0;
+    st.cursor = 0;
+    st.hex_pane = true;
+    st.edit_mode = false;
+    st.nibble_high = false;
+
+    int ch;
+    draw(&st);
+    while ((ch = getch()) != EOF) {
+        if (ch == 'q' || ch == 'Q') break;
+        if (ch == KEY_RESIZE) {
+            recalc_layout(&st);
+            draw(&st);
+            continue;
+        }
+        int min_cols = 8 + 2 + (MIN_BYTES_PER_LINE * 3) + 2 + MIN_BYTES_PER_LINE;
+        if (st.cols < min_cols || st.rows < MIN_LINES) {
+            if (ch == KEY_RESIZE) {
+                recalc_layout(&st);
+                draw(&st);
+            }
+            continue;
+        }
+
+        if (!st.edit_mode) {
+            switch (ch) {
+                case KEY_LEFT: move_relative(&st, -1); break;
+                case KEY_RIGHT: move_relative(&st, +1); break;
+                case KEY_UP: move_relative(&st, -st.bytes_per_line); break;
+                case KEY_DOWN: move_relative(&st, +st.bytes_per_line); break;
+                case KEY_NPAGE: move_relative(&st, + (st.lines * st.bytes_per_line)); break;
+                case KEY_PPAGE: move_relative(&st, - (st.lines * st.bytes_per_line)); break;
+                case KEY_HOME: st.cursor = 0; ensure_cursor_in_view(&st); break;
+                case KEY_END: st.cursor = st.file_size - 1; ensure_cursor_in_view(&st); break;
+                case '\t': st.hex_pane = !st.hex_pane; break;
+                case 'E': case 'e':
+                    if (st.hex_pane) {
+                        st.edit_mode = true;
+                        st.nibble_high = true;
+                        st.nibble_val = 0;
+                    } else {
+                        mvprintw(st.rows-1, 0, "Editing allowed only on hex pane. Press Tab to switch.");
+                        clrtoeol();
+                    }
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            if (ch == 27) {
+                st.edit_mode = false;
+                st.nibble_high = false;
+            } else if (ch == KEY_LEFT) move_relative(&st, -1);
+            else if (ch == KEY_RIGHT) move_relative(&st, +1);
+            else if (ch == KEY_UP) move_relative(&st, -st.bytes_per_line);
+            else if (ch == KEY_DOWN) move_relative(&st, +st.bytes_per_line);
+            else if (ch == KEY_NPAGE) move_relative(&st, + (st.lines * st.bytes_per_line));
+            else if (ch == KEY_PPAGE) move_relative(&st, - (st.lines * st.bytes_per_line));
+            else if (ch == KEY_HOME) { st.cursor = 0; ensure_cursor_in_view(&st); }
+            else if (ch == KEY_END) { st.cursor = st.file_size - 1; ensure_cursor_in_view(&st); }
+            else if (is_hex_digit(ch)) {
+                int v = hex_value(ch);
+                if (st.nibble_high) {
+                    st.nibble_val = (unsigned char)(v << 4);
+                    st.nibble_high = false;
+                } else {
+                    unsigned char newb = st.nibble_val | (unsigned char)v;
+                    st.map[st.cursor] = newb;
+                    sync_byte(&st, st.cursor);
+                    st.nibble_high = true;
+                    move_relative(&st, +1);
+                }
+            }
+        }
+
+        draw(&st);
+    }
+
+    endwin();
+    if (msync(st.map, st.file_size, MS_SYNC) < 0) fprintf(stderr, "msync final: %s\n", strerror(errno));
+    if (munmap(st.map, st.file_size) < 0) perror("munmap");
+    close(st.fd);
+    return 0;
+}

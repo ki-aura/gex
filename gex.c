@@ -65,6 +65,7 @@ void handle_global_keys(int k)
 		// if we're still in view mode, then edit / delete etc have cancelled 
 		// the Esc so we need to leave screen handling to them
 		if(app.mode == VIEW_MODE) {
+			if (k==KEY_RESIZE) create_windows();
 			v_update_all_windows();
 			doupdate();
 		}

@@ -66,23 +66,25 @@ void v_handle_keys(int k)
 
 void v_populate_grids()
 {
-	free(hex.gc);
-	free(ascii.gc);
-	
-	hex.gc = malloc((hex.grid * 3) + 1);
-	ascii.gc = malloc(hex.grid + 1);
-
-	memset(hex.gc, ' ', (hex.grid * 3));
-	memset(ascii.gc, ' ', (hex.grid));
-	
-	char t_hex[2];
-	for(int i=0; (hex.v_start + i) <= hex.v_end; i++){
-		byte_to_hex(app.map[hex.v_start + i], t_hex);
+	if (!app.too_small){
+		free(hex.gc);
+		free(ascii.gc);
 		
-		hex.gc[i * 3] = t_hex[0];
-		hex.gc[(i * 3) +1] = t_hex[1];		
+		hex.gc = malloc((hex.grid * 3) + 1);
+		ascii.gc = malloc(hex.grid + 1);
+	
+		memset(hex.gc, ' ', (hex.grid * 3));
+		memset(ascii.gc, ' ', (hex.grid));
 		
-		ascii.gc[i] = byte_to_ascii(app.map[hex.v_start + i]);
+		char t_hex[2];
+		for(int i=0; (hex.v_start + i) <= hex.v_end; i++){
+			byte_to_hex(app.map[hex.v_start + i], t_hex);
+			
+			hex.gc[i * 3] = t_hex[0];
+			hex.gc[(i * 3) +1] = t_hex[1];		
+			
+			ascii.gc[i] = byte_to_ascii(app.map[hex.v_start + i]);
+		}
 	}
 }
 
@@ -131,14 +133,16 @@ void v_refresh_ascii()
 
 void v_update_all_windows()
 {
-	v_populate_grids();
-
-	refresh_status();
-	refresh_helper("Options: quit insert edit delete test goto");
-	v_refresh_hex();
-	v_refresh_ascii();
-
-	doupdate();
+	if (!app.too_small){
+		v_populate_grids();
+	
+		refresh_status();
+		refresh_helper("Options: quit insert edit delete test goto");
+		v_refresh_hex();
+		v_refresh_ascii();
+	
+		doupdate();
+	}
 }
 
 void size_windows()
@@ -198,8 +202,9 @@ void create_windows()
 		box(helper.win, 0, 0);
 		box(hex.win, 0,0);
 		box(ascii.win, 0, 0);
+	
 	}
-
+	
 	// simulate a move so that the changes in the grid size are reflected 
 	v_handle_keys(KEY_ESCAPE);
 	
