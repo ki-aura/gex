@@ -6,7 +6,7 @@ bool open_file(int argc, char *argv[])
 
 	// check we have a file name
 	if (argc != 2) {
-	fprintf(stderr, "Usage: %s <file>\n", argv[0]);
+	fputs("Usage: %s <file>\n", stderr);
 		DP("no filename given");
 		return false;
 	} else {

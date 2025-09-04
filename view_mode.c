@@ -233,10 +233,13 @@ void v_goto_byte()
 	char *endptr;
 	char input_str[256] = "";
 	unsigned long input_val;
+
+snprintf(tmp, 200, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
+
  	
 	char *msg;
  	msg=malloc(60);
-	sprintf(msg, "Goto range between 0 & %lu", (unsigned long)app.fsize);
+	snprintf(msg, 59, "Goto range between 0 & %lu", (unsigned long)app.fsize);
 	
 	int msg_len = strlen(msg);
 	int win_h = 4;                   // fixed height

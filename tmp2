@@ -1,6 +1,6 @@
-hellow  = gcc
+CC      = gcc
 CFLAGS  = -Wextra -g
-LIBS    = -ldcurses -lpanel
+LIBS    = -lncurses -lpanel
 TARGET  = gex
 SRC     = gex.c dp.c view_mode.c file_handling.c
 OBJ     = $(SRC:.c=.o)
@@ -14,4 +14,4 @@ $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(TARGET) $(OBJ)goodbye
+	rm -f $(TARGET) $(OBJ)4567890

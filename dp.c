@@ -3,7 +3,7 @@
 
 // Debug Panel
 // usage: 
-// sprintf(tmp, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
+// snprintf(tmp, 200, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
 
 void DP(const char *msg) 
 {

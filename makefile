@@ -1,18 +1,22 @@
-CC       = clang
-CFLAGS_COMMON = -Wextra -g
-LIBS     = -lncurses -lpanel -lmenu
-TARGET   = gex
-SRC      = gex.c dp.c view_mode.c file_handling.c edit_mode.c
-OBJ      = $(SRC:.c=.o)
+CC           = clang
+CFLAGS_COMMON  = -Wextra
+CFLAGS_DEBUG = -g
+LIBS         = -lncurses -lpanel -lmenu
+TARGET       = gex
+SRC          = gex.c dp.c view_mode.c file_handling.c edit_mode.c
+OBJ          = $(SRC:.c=.o)
 
-.PHONY: all clean tidy asan tsan ubsan
+.PHONY: all clean tidy asan tsan release
 
-all: asan  # Default build with AddressSanitizer for general purpose debugging
+all: asan
 
-asan: CFLAGS = $(CFLAGS_COMMON) -fsanitize=address,undefined
+release: CFLAGS = $(CFLAGS_COMMON)
+release: $(TARGET)
+
+asan: CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_DEBUG) -fsanitize=address,undefined
 asan: $(TARGET)
 
-tsan: CFLAGS = $(CFLAGS_COMMON) -fsanitize=thread,undefined
+tsan: CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_DEBUG) -fsanitize=thread,undefined
 tsan: $(TARGET)
 
 tidy:

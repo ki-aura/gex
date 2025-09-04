@@ -5,13 +5,6 @@ void e_handle_partial_grid_keys(int k)
 {
 	switch(k){
 	// simple cases for home and end
-	case KEY_HOME:
-		// move start of current row
-		hex.cur_col=1;
-		hex.cur_digit=1;	// first hex digit (takes 3 spaces)
-		hex.is_lnib = true;	// left nibble of that digit
-		;break;
-
 	case KEY_END:
 		// move end of current row
 		if(hex.cur_row < hex.max_row) {
@@ -194,11 +187,7 @@ void e_handle_partial_grid_keys(int k)
 	else
 		hex.cur_row = hex.max_row -1;
 		break;
-
-	case KEY_PPAGE:
-		hex.cur_row = 1;
-		break;		
-	
+			
 	}
 }
 
@@ -206,12 +195,6 @@ void e_handle_full_grid_keys(int k)
 {
 	switch(k){
 	// simple cases for home and end
-	case KEY_HOME:
-		// move start of current row
-		hex.cur_col=1;
-		hex.cur_digit=1;	// first hex digit (takes 3 spaces)
-		hex.is_lnib = true;	// left nibble of that digit
-		;break;
 
 	case KEY_END:
 		// move end of current row
@@ -307,35 +290,30 @@ void e_handle_full_grid_keys(int k)
 	case KEY_NPAGE:
 		hex.cur_row = hex.rows;
 		break;
-
-	case KEY_PPAGE:
-		hex.cur_row = 1;
-		break;
 	
 	}
 }
 
 void e_handle_keys(int k)
 {
-	// hand off to handle any movement keys
-	if(hex.map_copy_len == hex.grid){
-		e_handle_full_grid_keys(k);
-	} else {
-		e_handle_partial_grid_keys(k);
-	}
-	
-	// now continue with functional keys here
 int idx;
 unsigned char nibble;
-
+	
+	// handle ay key movements that are common to both full and partial grids
 	switch(k){
-	// do stuff
-	case KEY_MAC_ENTER:
-		e_save_changes();
+	case KEY_HOME:
+	// move start of current row
+		hex.cur_col=1;
+		hex.cur_digit=1;	// first hex digit (takes 3 spaces)
+		hex.is_lnib = true;	// left nibble of that digit
+		;break;
+
+	case KEY_PPAGE:
+		hex.cur_row = 1;
 		break;
-		
+
 	case KEY_TAB:
-		//ensure on left nib on ascii pane return
+	//ensure on left nib on ascii pane return
 		if(!hex.is_lnib){
 			hex.cur_col--;
 			hex.is_lnib=true;
@@ -343,6 +321,22 @@ unsigned char nibble;
 		// flip panes
 		app.in_hex = !app.in_hex;
 		break; 
+	} // don't need a default option here as we continue below
+	
+	// hand off to handle any movement keys that differ wth a partial grid
+	if(hex.map_copy_len == hex.grid){
+		e_handle_full_grid_keys(k);
+	} else {
+		e_handle_partial_grid_keys(k);
+	}
+	
+	// now continue with functional keys here
+	switch(k){
+	// do stuff
+	case KEY_MAC_ENTER:
+		e_save_changes();
+		break;
+		
 	default: 
 		
 	// handle non-movement - editing 
@@ -429,10 +423,10 @@ void end_edit_mode(int k)
 	// if screen resized then no option, otherwise ask
 	if(k==KEY_RESIZE)
 		e_exit = true;
-	else
-		if( popup_question("Are you sure you want to exit Edit mode?",
-				   "All unsaved changes will be lost (y/n)", PTYPE_YN, EDIT_MODE) )
-			e_exit = true;
+	else 	if(!hex.changes_made) e_exit = true;
+		else if( popup_question("Are you sure you want to exit Edit mode?",
+		   "All unsaved changes will be lost (y/n)", PTYPE_YN, EDIT_MODE) )
+				e_exit = true;
 		
 	if (e_exit){
 		// clean up
@@ -552,9 +546,22 @@ void e_save_changes(){
 			"Press any key to continue", PTYPE_CONTINUE, EDIT_MODE);
 	else if(popup_question("Are you sure you want to save changes?",
 			"This action can not be undone (y/n)", PTYPE_YN, EDIT_MODE)){
-		// save changes 
-		
-		hex.changes_made = FALSE;
+	// save changes 
+	// replace app.map segment with update changes & msync
+ 	// this is how we created hex.map_copy
+/*	hex.map_copy = malloc(hex.map_copy_len + 1);
+	memcpy(hex.map_copy, (app.map + hex.v_start), hex.map_copy_len);
+	hex.map_copy[hex.map_copy_len] = '\0';
+*/	
+	// copy it back to app.map
+	memcpy((app.map + hex.v_start), hex.map_copy, hex.map_copy_len);
+	
+	// and sync it out
+	if (msync(app.map, app.fsize, MS_SYNC) < 0) {
+		snprintf(tmp, 200, "msync error %s", strerror(errno)); DP(tmp); 
+	}
+	
+	hex.changes_made = FALSE;
 	}
 }
 

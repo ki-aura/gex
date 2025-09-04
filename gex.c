@@ -26,7 +26,7 @@ void initial_setup()
 	app.mode=VIEW_MODE;	
 
 	// set up global variable for debug panel
-	tmp = malloc(200);
+	tmp = malloc(201);
 	
 	// Hex window
 	hex.v_start = 0;
