@@ -346,7 +346,6 @@ unsigned char nibble;
 	default: 
 		
 	// handle non-movement - editing 
-DP_ON=true;		
 		// where are we in hex.gc_copy
 		idx = (((hex.cur_row-1) * hex.digits) + (hex.cur_digit-1));
                 if (!app.in_hex) { // we're in ascii pane
@@ -485,21 +484,18 @@ void e_copy_screen()
 		hex.max_row++; // we can go to next row, but only so far along
 	}
 
-//DP_ON=true; sprintf(tmp, "copy screen %i %lu", hex.map_copy_len, hex.v_start); DP(tmp); 
-	
 	// allocate space and copy from the app.map
 	hex.map_copy = malloc(hex.map_copy_len + 1);
 	memcpy(hex.map_copy, (app.map + hex.v_start), hex.map_copy_len);
 	hex.map_copy[hex.map_copy_len] = '\0';
 
-//DP_ON=true; sprintf(tmp, "copy map %c %c", hex.map_copy[0], hex.map_copy[1]); DP(tmp); 
-
+/* DP_ON=true; sprintf(tmp, "copy map %c %c", hex.map_copy[0], hex.map_copy[1]); DP(tmp); 
 hex.map_copy[0]='!';
 hex.map_copy[1]='Y';
 hex.map_copy[2]='e';
 hex.map_copy[3]='s';
-//DP_ON=true; sprintf(tmp, "copy map %c %c", hex.map_copy[0], hex.map_copy[1]); DP(tmp); 
-	
+DP_ON=true; sprintf(tmp, "copy map %c %c", hex.map_copy[0], hex.map_copy[1]); DP(tmp); 
+*/	
 	// now the displayable grid contents
 	hex.gc_copy = malloc((hex.grid * 3) + 1);
 	ascii.gc_copy = malloc(hex.grid + 1);

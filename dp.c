@@ -3,11 +3,10 @@
 
 // Debug Panel
 // usage: 
-// DP_ON=true; sprintf(tmp, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
+// sprintf(tmp, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
 
 void DP(const char *msg) 
 {
-//	if(DP_ON){
 	    int rows, cols;
 	    getmaxyx(stdscr, rows, cols);
 	
@@ -40,6 +39,5 @@ void DP(const char *msg)
 	
 	    update_panels();
 	    doupdate();
-//	}
 }
 

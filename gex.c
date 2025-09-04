@@ -10,7 +10,7 @@ helper_windef helper = {.win = NULL};
 hex_windef hex = {.win = NULL, .gc = NULL};
 ascii_windef ascii = {.win = NULL, .gc = NULL};
 char app_mode_desc[5][10] = {"Edit  ", "Insert", "Delete", "View  ", "Keys  "};
-
+char *tmp = NULL;
 
 void initial_setup()
 {
@@ -131,6 +131,7 @@ void refresh_helper(char *helpmsg)
 	box(helper.win, 0, 0);
 	char *help_line = malloc(helper.width -1 ); // -2 to exclude borders, +1 for null
 	memset(help_line, ' ', helper.width - 2);
+	help_line[helper.width - 2]='\0';
 	mvwprintw(helper.win, 1, 1, help_line);   // blank it out
 	mvwprintw(helper.win, 1, 1, helpmsg);     // and fill it new
 	wnoutrefresh(helper.win);

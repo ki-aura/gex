@@ -4,22 +4,22 @@
 
 void v_handle_keys(int k)
 {
-//DP("in move mode");
-DP_ON = false;
+//////DP("in move mode");
+////DP_ON = false;
 
 	switch(k){
 	// simple cases for home and end
 	case KEY_HOME:
-		DP("home");
+		////DP("home");
 		hex.v_start = 0;
 		;break;
 	case KEY_END:
-		DP("end");
+		//DP("end");
 		hex.v_start = app.fsize - hex.grid ;
 		break;
 	// going down file, add here an rely on boundary conditions to check of we're over
 	case KEY_RIGHT:
-		DP("down l char");
+		//DP("down l char");
 		hex.v_start++;
 		break;
 	case KEY_DOWN:

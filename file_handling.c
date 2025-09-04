@@ -3,8 +3,6 @@
 
 bool open_file(int argc, char *argv[])
 {
-//DP("in file open");
-DP_ON = true;
 
 	// check we have a file name
 	if (argc != 2) {
@@ -50,7 +48,6 @@ DP_ON = true;
 
 void close_file()
 {
-DP_ON=true;
 
 	if (munmap(app.map, app.fsize) < 0) {
 		DP("munmap error");
