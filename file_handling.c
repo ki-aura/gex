@@ -56,5 +56,18 @@ void close_file()
 
 }
 
+// Comparison for qsort: by int key
+typedef struct {
+	int key; 
+	char val; 
+} kv_t;
+
+int cmp_key(const void *a, const void *b) {
+    const kv_t *pa = (const kv_t*)a;
+    const kv_t *pb = (const kv_t*)b;
+    return pa->key - pb->key;
+}
+
+
 
 

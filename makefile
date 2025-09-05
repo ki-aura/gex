@@ -13,7 +13,7 @@ all: asan
 release: CFLAGS = $(CFLAGS_COMMON)
 release: $(TARGET)
 
-asan: CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_DEBUG) -fsanitize=address,undefined
+asan: CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_DEBUG) -fsanitize=address,undefined,leak
 asan: $(TARGET)
 
 tsan: CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_DEBUG) -fsanitize=thread,undefined

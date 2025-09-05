@@ -11,5 +11,4 @@ void size_windows();
 void create_windows();
 void delete_windows();
 
-
 #endif

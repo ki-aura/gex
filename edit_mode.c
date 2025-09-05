@@ -187,7 +187,6 @@ void e_handle_partial_grid_keys(int k)
 	else
 		hex.cur_row = hex.max_row -1;
 		break;
-			
 	}
 }
 
@@ -298,6 +297,7 @@ void e_handle_keys(int k)
 {
 int idx;
 unsigned char nibble;
+bool undo = false;
 	
 	// handle ay key movements that are common to both full and partial grids
 	switch(k){
@@ -321,6 +321,15 @@ unsigned char nibble;
 		// flip panes
 		app.in_hex = !app.in_hex;
 		break; 
+
+	case KEY_BKSPC:
+		// first move left 
+		e_handle_keys(KEY_LEFT);
+		// now set undo flag for any changes on this char or nibble 
+		undo = true;
+		// and trigger the delete
+//		e_handle_keys(KEY_LEFT_PROXY); // this won't be handled, so will trigger default
+		
 	} // don't need a default option here as we continue below
 	
 	// hand off to handle any movement keys that differ wth a partial grid
@@ -337,42 +346,78 @@ unsigned char nibble;
 		e_save_changes();
 		break;
 		
-	default: 
-		
-	// handle non-movement - editing 
+	default: 	// handle non-movement - editing 		
 		// where are we in hex.gc_copy
 		idx = (((hex.cur_row-1) * hex.digits) + (hex.cur_digit-1));
-                if (!app.in_hex) { // we're in ascii pane
-                    if (isprint(k)) {
-                        hex.map_copy[idx] = (unsigned char)k;
-                        hex.changes_made = true;
-                        e_build_grids_from_map_copy();
-                        e_refresh_ascii();
-                        e_refresh_hex();
-                        e_handle_keys(KEY_RIGHT);
-                    }
-                } else {  // we are in hex pane
-                    if ((k >= '0' && k <= '9') || (k >= 'A' && k <= 'F') || (k >= 'a' && k <= 'f')) {
-                        nibble = (k >= '0' && k <= '9') ? (k - '0') :
-                                               (k >= 'a') ? (k - 'a' + 10) : (k - 'A' + 10);
+		
+		if (undo){
+			// backspace was pressed
+			undo = false;
+			// check if there's a change at this point
+			slot = kh_get(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx));
+			if (slot != kh_end(app.edmap)) {
+				// set the bit back to the original map
+				hex.map_copy[idx] = kh_val(app.edmap, slot).old_ch;
+				// remove the undo map 
+				kh_del(charmap, app.edmap, slot);
+				e_build_grids_from_map_copy();
+				e_refresh_ascii();
+				e_refresh_hex();
+			}
+			
+		} else {		
+			if (!app.in_hex) { // we're in ascii pane
+			    if (isprint(k)) {
+				// push the change onto the edit map
+				slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
+				if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
+				kh_val(app.edmap, slot).new_ch = (unsigned char)k;
 
-                        if (hex.is_lnib) {
-                            hex.map_copy[idx] = (hex.map_copy[idx] & 0x0F) | (nibble << 4);
-                            hex.changes_made = true;
-			e_build_grids_from_map_copy();
-			e_refresh_ascii();
-			e_refresh_hex();
-			e_handle_keys(KEY_RIGHT);
-                        } else {
-                            hex.map_copy[idx] = (hex.map_copy[idx] & 0xF0) | nibble;
-                            hex.changes_made = true;
-			e_build_grids_from_map_copy();
-			e_refresh_ascii();
-			e_refresh_hex();
-			e_handle_keys(KEY_RIGHT);
-                        }
-                    }
-                }
+				// Update the display only map
+				hex.map_copy[idx] = (unsigned char)k;
+				hex.changes_made = true;
+
+				// trigger a refresh
+				e_build_grids_from_map_copy();
+				e_refresh_ascii();
+				e_refresh_hex();
+				e_handle_keys(KEY_RIGHT);
+			    }
+			} else {  // we are in hex pane
+			    if ((k >= '0' && k <= '9') || (k >= 'A' && k <= 'F') || (k >= 'a' && k <= 'f')) {
+				nibble = (k >= '0' && k <= '9') ? (k - '0') :
+						       (k >= 'a') ? (k - 'a' + 10) : (k - 'A' + 10);
+	
+				if (hex.is_lnib) {
+					// push the change onto the edit map
+					slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
+					if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
+					kh_val(app.edmap, slot).new_ch = (unsigned char)((hex.map_copy[idx] & 0x0F) | (nibble << 4));
+					// Update the display only map
+					hex.map_copy[idx] = (hex.map_copy[idx] & 0x0F) | (nibble << 4);
+					hex.changes_made = true;
+					// trigger a refresh
+					e_build_grids_from_map_copy();
+					e_refresh_ascii();
+					e_refresh_hex();
+					e_handle_keys(KEY_RIGHT);
+				} else {
+					// push the change onto the edit map
+					slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
+					if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
+					kh_val(app.edmap, slot).new_ch = (unsigned char)((hex.map_copy[idx] & 0xF0) | nibble);
+					// Update the display only map
+					hex.map_copy[idx] = (hex.map_copy[idx] & 0xF0) | nibble;
+					hex.changes_made = true;
+					// show changes
+					e_build_grids_from_map_copy();
+					e_refresh_ascii();
+					e_refresh_hex();
+					e_handle_keys(KEY_RIGHT);
+				}
+			    }
+			}
+		}
 		break;
 	}
 
@@ -386,14 +431,15 @@ unsigned char nibble;
 		wmove(ascii.win, hex.cur_row, hex.cur_digit);
 		wnoutrefresh(ascii.win);	
 	}
-	doupdate();	
+	doupdate();
 }
 
 void init_edit_mode()
 {
 	// set the helper bar to something mode helpful
-	refresh_status(); wrefresh(status.win);
-	refresh_helper("Options: Escape Enter Tab"); wrefresh(helper.win);
+	refresh_status(); 
+	refresh_helper("Options: Escape Enter Tab"); 
+	doupdate();
 	
 	// grab a screen copy
 	e_copy_screen();
@@ -404,6 +450,8 @@ void init_edit_mode()
 	// set edit mode coming in defaults
 	app.in_hex = true;	// start in hex screen
 	hex.changes_made = false;
+	// clear any historical changes
+	kh_clear(charmap, app.edmap);
 	// cursor starting location
 	hex.cur_row=1;
 	hex.cur_col=1;
@@ -421,11 +469,12 @@ void end_edit_mode(int k)
 	bool e_exit = false; // default is not to 
 	
 	// if screen resized then no option, otherwise ask
-	if(k==KEY_RESIZE)
-		e_exit = true;
-	else 	if(!hex.changes_made) e_exit = true;
-		else if( popup_question("Are you sure you want to exit Edit mode?",
-		   "All unsaved changes will be lost (y/n)", PTYPE_YN, EDIT_MODE) )
+	if(k==KEY_RESIZE) e_exit = true;
+	else 
+		if(kh_size(app.edmap) == 0) e_exit = true;
+		else 
+			if( popup_question("Are you sure you want to exit Edit mode?",
+			"All unsaved changes will be lost (y/n)", PTYPE_YN) )
 				e_exit = true;
 		
 	if (e_exit){
@@ -434,7 +483,8 @@ void end_edit_mode(int k)
 		free(hex.gc_copy);
 		free(ascii.gc_copy);
 		free(hex.map_copy);
-		
+		// clear any historical changes
+		kh_clear(charmap, app.edmap);		
 		// pass control back to main loop by setting mode back to view
 		app.mode = VIEW_MODE;
 	}	
@@ -442,16 +492,18 @@ void end_edit_mode(int k)
 
 void e_build_grids_from_map_copy()
 {
+	// we want to start with blank grids - every cell = space
 	memset(hex.gc_copy, ' ', (hex.grid * 3));
 	memset(ascii.gc_copy, ' ', (hex.grid));
 	
 	char t_hex[2];
 	for(int i=0; i < (int)hex.map_copy_len; i++){
+		// for the hex map copy, convert byte to ascii
 		byte_to_hex(hex.map_copy[i], t_hex);
-		
+		// we only need populat the hex digits as digit 3 is already a space
 		hex.gc_copy[i * 3] = t_hex[0];
 		hex.gc_copy[(i * 3) +1] = t_hex[1];		
-		
+		// for ascii it's a one to one conversion to ascii
 		ascii.gc_copy[i] = byte_to_ascii(hex.map_copy[i]);
 	}
 }
@@ -467,12 +519,13 @@ void e_copy_screen()
 //	int max_col; 	// this is the max col on the max row we can edit if screen > file size
 //	int max_digit; // this is the max digit on the max row we can edit if screen > file size
 	hex.max_row = hex.map_copy_len / hex.digits; // number of full rows
+
 	if((hex.max_row * hex.digits) == hex.map_copy_len) {
 		// we ended up with exactly a full row
 		hex.max_digit = hex.digits;
 		hex.max_col = hex.digits * 3;
 	} else {
-		// we ended up mid-row
+		// we ended up with a partly filled row so can only copy up to there
 		hex.max_digit = hex.map_copy_len - (hex.max_row * hex.digits);
 		hex.max_col = hex.max_digit * 3;
 		hex.max_row++; // we can go to next row, but only so far along
@@ -483,13 +536,6 @@ void e_copy_screen()
 	memcpy(hex.map_copy, (app.map + hex.v_start), hex.map_copy_len);
 	hex.map_copy[hex.map_copy_len] = '\0';
 
-/* DP_ON=true; sprintf(tmp, "copy map %c %c", hex.map_copy[0], hex.map_copy[1]); DP(tmp); 
-hex.map_copy[0]='!';
-hex.map_copy[1]='Y';
-hex.map_copy[2]='e';
-hex.map_copy[3]='s';
-DP_ON=true; sprintf(tmp, "copy map %c %c", hex.map_copy[0], hex.map_copy[1]); DP(tmp); 
-*/	
 	// now the displayable grid contents
 	hex.gc_copy = malloc((hex.grid * 3) + 1);
 	ascii.gc_copy = malloc(hex.grid + 1);
@@ -501,18 +547,31 @@ DP_ON=true; sprintf(tmp, "copy map %c %c", hex.map_copy[0], hex.map_copy[1]); DP
 void e_refresh_hex()
 {
 	box(hex.win, 0, 0);
-
+	bool chg;
 	int hr=1; // offset print row on grid. 1 avoids the borders
 	int hc=1;
 	int i=0; 
+	int hex_pos=1; // tracks where we are in a hex digit
 	int grid_points = hex.grid * 3;
 	int row_points = hex.digits * 3;
 	while(i<grid_points ){
 		// print as much as a row as we can
 		while ((i < grid_points) && (hc <= row_points)){
+			// check if there's a change at this point and bold it
+			// we only want to check if the hex_pos is 1, and then it lasts for 3 postions
+
+			if(hex_pos == 1) { // start of a hex digit, so we can safely / 3 for file offset
+				slot = kh_get(charmap, app.edmap, (int64_t)(app.map + hex.v_start + (i/3)));
+				if (slot != kh_end(app.edmap)) chg=true; else chg=false;
+			}
+			// output the hex with changes in red			
+			if (chg) wattron(hex.win, COLOR_PAIR(1) | A_BOLD);
 			mvwprintw(hex.win, hr, hc, "%c", hex.gc_copy[i]);
-			hc++;
+			if (chg) wattroff(hex.win,COLOR_PAIR(1) |  A_BOLD);
+
+			hc++;	// next col (3 cols to a digit)
 			i++;
+			hex_pos++; if(hex_pos > 3) hex_pos = 1; 
 		}
 		hc = 1;
 		hr++;
@@ -523,14 +582,19 @@ void e_refresh_hex()
 void e_refresh_ascii()
 {
 	box(ascii.win, 0, 0);
-	
+	bool chg;
 	int hr=1; // offset print row on grid. 1 avoids the borders
 	int hc=1;
 	int i=0; 
 	while(i<hex.grid){
 		// print as much as a row as we can
 		while ((i < hex.grid) && (hc <= hex.digits)){
+			// check if there's a change at this point and bold it
+			slot = kh_get(charmap, app.edmap, (int64_t)(app.map + hex.v_start + i));
+			if (slot != kh_end(app.edmap)) chg=true; else chg=false;
+			if (chg) wattron(ascii.win, COLOR_PAIR(1) | A_BOLD);
 			mvwprintw(ascii.win, hr, hc, "%c", ascii.gc_copy[i]);
+			if (chg) wattroff(ascii.win, COLOR_PAIR(1) | A_BOLD);
 			hc++;
 			i++;
 		}
@@ -543,25 +607,26 @@ void e_refresh_ascii()
 void e_save_changes(){
 	if (!hex.changes_made)
 		popup_question("No changes made",
-			"Press any key to continue", PTYPE_CONTINUE, EDIT_MODE);
+			"Press any key to continue", PTYPE_CONTINUE);
 	else if(popup_question("Are you sure you want to save changes?",
-			"This action can not be undone (y/n)", PTYPE_YN, EDIT_MODE)){
-	// save changes 
-	// replace app.map segment with update changes & msync
- 	// this is how we created hex.map_copy
-/*	hex.map_copy = malloc(hex.map_copy_len + 1);
-	memcpy(hex.map_copy, (app.map + hex.v_start), hex.map_copy_len);
-	hex.map_copy[hex.map_copy_len] = '\0';
-*/	
-	// copy it back to app.map
-	memcpy((app.map + hex.v_start), hex.map_copy, hex.map_copy_len);
+			"This action can not be undone (y/n)", PTYPE_YN)){
+		// save changes 
+		// replace app.map segment with update changes & msync
+		memcpy((app.map + hex.v_start), hex.map_copy, hex.map_copy_len);
+		
+		// and sync it out
+		if (msync(app.map, app.fsize, MS_SYNC) < 0) {
+			snprintf(tmp, 200, "msync error %s", strerror(errno)); DP(tmp); 
+		}
+		// clear change history as these are now permanent
+		kh_clear(charmap, app.edmap);
+		// refresh to get rid of old change highlights
+		e_build_grids_from_map_copy();
+		e_refresh_ascii();
+		e_refresh_hex();
+		e_handle_keys(KEY_RIGHT);
 	
-	// and sync it out
-	if (msync(app.map, app.fsize, MS_SYNC) < 0) {
-		snprintf(tmp, 200, "msync error %s", strerror(errno)); DP(tmp); 
-	}
-	
-	hex.changes_made = FALSE;
+		hex.changes_made = FALSE;
 	}
 }
 
