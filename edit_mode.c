@@ -1,6 +1,52 @@
 #include "gex.h"
 #include "edit_mode.h"
 
+void e_handle_click(clickwin win, int row, int col)
+{
+	// if we clicked outside hex or ascii windows then don't care
+	if(win == WIN_OTHER) return;
+//snprintf(tmp,200,"col %d digit %d row %d HiNib %d",hex.cur_col, hex.cur_digit, row, (int)hex.is_lnib); popup_question(tmp, "", PTYPE_CONTINUE);
+	
+	// handle_full_grid_clicks 		
+	if(win == WIN_HEX) {
+		// this so far only handles full panes
+		if(!app.in_hex) app.in_hex = true;
+		hex.cur_row = row;
+		hex.cur_digit = (col + 2)/3;
+		hex.cur_col = col; 
+		// move back 1 if we clicked on a space in the grid
+		if((hex.cur_col%3)==0)hex.cur_col--;
+		// work out which nibble we're on
+		if((hex.cur_col%3)==1)hex.is_lnib=true; else hex.is_lnib=false;
+
+	}
+	
+	if(win == WIN_ASCII){
+		// this so far only handles full panes
+		if(app.in_hex) app.in_hex = false;
+		hex.cur_row = row;
+		hex.cur_digit = col;
+		hex.cur_col = (col *3) -2;
+		hex.is_lnib=true;
+		// ascii boundary checks needed for and partially filled window
+	}
+
+		// boundary checks needed for and partially filled window
+		if(hex.map_copy_len != hex.grid) {
+			// if we clicked above the max row set to max row
+			if(hex.cur_row > hex.max_row) hex.cur_row = hex.max_row;
+			// if we are on max_row and further over than max col, set to max col
+			if ((hex.cur_row == hex.max_row) && (hex.cur_col > hex.max_col)) {
+				hex.cur_col = hex.max_col-1;
+				hex.cur_digit = (hex.max_col+2)/3;
+				}
+		} 
+
+	e_handle_keys(KEY_HELP); // a key that will drop through to the display updates
+	return;
+
+}
+
 void e_handle_partial_grid_keys(int k)
 {
 	switch(k){
@@ -352,27 +398,32 @@ bool undo = false;
 		
 		if (undo){
 			// backspace was pressed
-			undo = false;
-			// check if there's a change at this point
+			// check if there's a real change at this point, or we've typed what was orignally there
 			slot = kh_get(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx));
 			if (slot != kh_end(app.edmap)) {
 				// set the bit back to the original map
-				hex.map_copy[idx] = kh_val(app.edmap, slot).old_ch;
+				hex.map_copy[idx] = app.map[hex.v_start + idx];
 				// remove the undo map 
 				kh_del(charmap, app.edmap, slot);
 				e_build_grids_from_map_copy();
 				e_refresh_ascii();
 				e_refresh_hex();
 			}
-			
-		} else {		
+		} else {	
+			// normal edit processing (not undo)	
 			if (!app.in_hex) { // we're in ascii pane
 			    if (isprint(k)) {
-				// push the change onto the edit map
-				slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
-				if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
-				kh_val(app.edmap, slot).new_ch = (unsigned char)k;
-
+				// if it's the same as the underlying file then get rid of any edit map
+				if( k == app.map[hex.v_start + idx]){
+					slot = kh_get(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx));
+					if (slot != kh_end(app.edmap)) 
+						kh_del(charmap, app.edmap, slot);
+					}
+				else {  // push the change onto the edit map
+					slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
+					//if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
+					kh_val(app.edmap, slot) = (unsigned char)k;
+				}
 				// Update the display only map
 				hex.map_copy[idx] = (unsigned char)k;
 				hex.changes_made = true;
@@ -384,38 +435,38 @@ bool undo = false;
 				e_handle_keys(KEY_RIGHT);
 			    }
 			} else {  // we are in hex pane
-			    if ((k >= '0' && k <= '9') || (k >= 'A' && k <= 'F') || (k >= 'a' && k <= 'f')) {
-				nibble = (k >= '0' && k <= '9') ? (k - '0') :
+				if ((k >= '0' && k <= '9') || (k >= 'A' && k <= 'F') || (k >= 'a' && k <= 'f')) {
+					nibble = (k >= '0' && k <= '9') ? (k - '0') :
 						       (k >= 'a') ? (k - 'a' + 10) : (k - 'A' + 10);
 	
-				if (hex.is_lnib) {
-					// push the change onto the edit map
-					slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
-					if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
-					kh_val(app.edmap, slot).new_ch = (unsigned char)((hex.map_copy[idx] & 0x0F) | (nibble << 4));
-					// Update the display only map
-					hex.map_copy[idx] = (hex.map_copy[idx] & 0x0F) | (nibble << 4);
-					hex.changes_made = true;
-					// trigger a refresh
-					e_build_grids_from_map_copy();
-					e_refresh_ascii();
-					e_refresh_hex();
-					e_handle_keys(KEY_RIGHT);
-				} else {
-					// push the change onto the edit map
-					slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
-					if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
-					kh_val(app.edmap, slot).new_ch = (unsigned char)((hex.map_copy[idx] & 0xF0) | nibble);
-					// Update the display only map
-					hex.map_copy[idx] = (hex.map_copy[idx] & 0xF0) | nibble;
-					hex.changes_made = true;
-					// show changes
-					e_build_grids_from_map_copy();
-					e_refresh_ascii();
-					e_refresh_hex();
-					e_handle_keys(KEY_RIGHT);
+					if (hex.is_lnib) {
+						// push the change onto the edit map
+						slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
+						//if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
+						kh_val(app.edmap, slot) = (unsigned char)((hex.map_copy[idx] & 0x0F) | (nibble << 4));
+						// Update the display only map
+						hex.map_copy[idx] = (hex.map_copy[idx] & 0x0F) | (nibble << 4);
+						hex.changes_made = true;
+						// trigger a refresh
+						e_build_grids_from_map_copy();
+						e_refresh_ascii();
+						e_refresh_hex();
+						e_handle_keys(KEY_RIGHT);
+					} else {
+						// push the change onto the edit map
+						slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
+						//if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
+						kh_val(app.edmap, slot) = (unsigned char)((hex.map_copy[idx] & 0xF0) | nibble);
+						// Update the display only map
+						hex.map_copy[idx] = (hex.map_copy[idx] & 0xF0) | nibble;
+						hex.changes_made = true;
+						// show changes
+						e_build_grids_from_map_copy();
+						e_refresh_ascii();
+						e_refresh_hex();
+						e_handle_keys(KEY_RIGHT);
+					}
 				}
-			    }
 			}
 		}
 		break;
@@ -605,7 +656,7 @@ void e_refresh_ascii()
 }
 
 void e_save_changes(){
-	if (!hex.changes_made)
+	if (kh_size(app.edmap) == 0)
 		popup_question("No changes made",
 			"Press any key to continue", PTYPE_CONTINUE);
 	else if(popup_question("Are you sure you want to save changes?",

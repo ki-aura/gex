@@ -43,15 +43,50 @@ typedef enum {
     VIEW_MODE, 
 } app_mode;
 
+typedef enum {
+	WIN_HEX,
+	WIN_ASCII,
+	WIN_OTHER,
+} clickwin;
 
-// hash structure
-typedef struct {
-	unsigned char old_ch; 
-	unsigned char new_ch; 
-} chg_hash;
 
-// Initialize khash: signed long integer key  → slots holding chg_hash struct
-KHASH_MAP_INIT_INT64(charmap, chg_hash)
+// Initialize khash: signed long integer key  → slots holding unsigned char
+KHASH_MAP_INIT_INT64(charmap, unsigned char)
+/*
+Function / Macro	Description
+KHASH_MAP_INIT_INT(name, valtype)	Defines a complete integer-keyed hash table type 
+					name with values of type valtype and all related macros/functions.
+khash_t(name) *h	Declares a pointer h to a hash table of the type given name.
+h = kh_init(name)	Allocate and initialize a new hash table; returns a pointer to the table
+kh_destroy(name, h)	Free memory used by hash table h.
+
+khiter_t k 		integer index to a slot within a table. Returned by functions that 
+			modify the table or iterate / check on key existence Remember
+			** SLOTS ARE PRE-ALLOCATED INTERNALLY AND ARE ALL INITIALLY EMPTY **
+			
+kh_put(name, h, key, &ret)	Insert new key (or get existing) and return its slot; 
+				ret indicates if new (1), existing (0), or failure (-1).
+				**NOTE nothing is overwritten at this point, you just have a 
+				slot index and a return code that says if it's new or existing
+kh_val(h, k)		Access the value at slot k. used to set or retrieve the value
+kh_key(h, k)		read only lookup of a key; returns the slot index k. can NOT be used to update the key
+kh_get(name, h, key)	read only Look up key; returns slot index or kh_end(h) if not found but 
+			doesn't create one if it does exist (compare this to kh_put)
+kh_del(name, h, k)	Delete the key/value at slot k.
+kh_begin(h)		Returns the index of the first slot in the table (all slots may be empty).
+kh_end(h)		Returns the index just past the last slot. (ie used as iter loop terminator)
+kh_exist(h, k)		Returns true if slot k contains a valid key/value.
+kh_size(h)		Returns the number of valid elements currently in the table.
+kh_clear(name, h)	Remove all elements but keep table allocated (reset all slots to empty).
+
+** NOTE FOR UNSIGNED LONGS **
+KHASH_MAP_INIT_INT64(name, valtype) 	will create a type long enough to take unsigned longs, but
+					INT64 is signed. this isn't a problem as KH doesn't care if 
+					your key is negative, so casting from UL to INT64 isn't a
+					problem. other funcs will need to look like this:
+kh_get(name, h, (int64_t)UL_key)	casting the ul key to an int64
+*/
+
 
 // Overall (non-window) screen attributes & app status
 typedef struct {
@@ -140,6 +175,8 @@ void initial_setup();
 void final_close(int signum);
 void refresh_helper(char *helpmsg);
 void refresh_status();
+clickwin get_window_click(MEVENT *event, int *row, int *col);
+
 
 
 extern appdef app;
@@ -151,6 +188,8 @@ extern char app_mode_desc[][10];
 extern char *tmp;// makes debug panel usage easier
 extern khiter_t slot; // general hash usage
 extern int khret;
+extern MEVENT event;
+
 // snprintf(tmp, 200, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
 
 #endif

@@ -14,11 +14,18 @@ char app_mode_desc[5][10] = {"Edit  ", "Insert", "Delete", "View  ", "Keys  "};
 char *tmp = NULL;
 khiter_t slot;
 int khret;
+MEVENT event;
+
 
 void initial_setup()
 {
 	// Initialize ncurses
 	initscr();
+//	mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+//	mousemask(BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | BUTTON1_TRIPLE_CLICKED, NULL);
+mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED |
+          BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED |
+          BUTTON1_TRIPLE_CLICKED, NULL);
 	start_color();
 	use_default_colors(); 
 	init_pair(1, COLOR_RED, -1);
@@ -264,11 +271,47 @@ unsigned long  popup_question(const char *qline1, const char *qline2, popup_type
 	return answer;
 }
 
+clickwin get_window_click(MEVENT *event, int *row, int *col) 
+{
+    int win_y, win_x, win_rows, win_cols;
+	
+	// get mouse row (y) and col (x)
+    int y = event->y;
+    int x = event->x;
+
+    // Check hex window
+    getbegyx(hex.win, win_y, win_x);
+    getmaxyx(hex.win, win_rows, win_cols);
+
+    if (y >= win_y + 1 && y < win_y + win_rows - 1 &&
+        x >= win_x + 1 && x < win_x + win_cols - 1) { 
+        *row = y - (win_y);			
+        *col = x - (win_x);
+        return WIN_HEX;
+    }
+
+    // Check ascii window
+    getbegyx(ascii.win, win_y, win_x);
+    getmaxyx(ascii.win, win_rows, win_cols);
+
+    if (y >= win_y + 1 && y < win_y + win_rows - 1 &&
+        x >= win_x + 1 && x < win_x + win_cols - 1) {
+        *row = y - (win_y);
+        *col = x - (win_x);
+        return WIN_ASCII;
+    }
+
+    // Outside both windows
+    *row = *col = -1;
+    return WIN_OTHER;
+}
+
 int main(int argc, char *argv[]) 
 {
 signal(SIGINT, final_close);
 signal(SIGQUIT, final_close);
 signal(SIGTERM, final_close);
+int handled = 0;
 
 	// Initial app setup
 	initial_setup();
@@ -279,22 +322,39 @@ signal(SIGTERM, final_close);
 		create_windows();
 		int ch;
 		// Main loop to handle input
-		ch = getch();
-//snprintf(tmp,10,"%d",ch);
-//popup_question(tmp,"",PTYPE_CONTINUE);
-
+		ch = '6'; // meaningless key
 		while (	(app.mode != VIEW_MODE) ||
 			((app.mode == VIEW_MODE) && (ch != 'q'))) {
-			if (ch == KEY_RESIZE) {
-				// if not in view mode when the window is resized, then this could
-				// cause issues so let global key handler deal with it
-				handle_global_keys(ch);		
-				// Re-create all windows on resize
-				create_windows();
-			} else {
-				if (!app.too_small) handle_global_keys(ch);
-			}
+
 			ch = getch();
+			switch(ch){
+			case KEY_MOUSE: // only handle in Edit mode
+			if ((getmouse(&event) == OK) && (app.mode == EDIT_MODE)) {
+			// Treat any of these as a "logical click"
+				const mmask_t CLICKY = BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | 
+							BUTTON1_TRIPLE_CLICKED | BUTTON1_PRESSED;
+				if (event.bstate & CLICKY) {
+					int row, col;
+					clickwin win = get_window_click(&event, &row, &col); // relative coords, or 'n'
+					e_handle_click(win, row, col);
+				}
+			}
+			break;
+			
+			case KEY_RESIZE:
+			// if not in view mode when the window is resized, then this could
+			// cause issues so let global key handler deal with it
+			handle_global_keys(ch);		
+			// Re-create all windows on resize
+			create_windows();
+	//		ch = getch();
+			break;
+			
+			default:
+			if (!app.too_small) handle_global_keys(ch);
+//			ch = getch();
+			break;			
+			}
 		}
 		// no longer need the file open
 		close_file();
@@ -304,4 +364,6 @@ signal(SIGTERM, final_close);
 	final_close(0);		
 	return 0;
 }
+
+
 

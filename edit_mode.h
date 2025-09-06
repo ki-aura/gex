@@ -11,5 +11,6 @@ void e_refresh_hex();
 void e_refresh_ascii();
 void e_save_changes();
 void e_build_grids_from_map_copy();
+void e_handle_click(clickwin win, int row, int col);
 
 #endif
