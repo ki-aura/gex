@@ -164,8 +164,8 @@ void refresh_helper(char *helpmsg)
 	char *help_line = malloc(helper.width -1 ); // -2 to exclude borders, +1 for null
 	memset(help_line, ' ', helper.width - 2);
 	help_line[helper.width - 2]='\0';
-	mvwprintw(helper.win, 1, 1, help_line);   // blank it out
-	mvwprintw(helper.win, 1, 1, helpmsg);     // and fill it new
+	mvwprintw(helper.win, 1, 1, "%s", help_line);   // blank it out
+	mvwprintw(helper.win, 1, 1, "%s", helpmsg);     // and fill it new
 	wnoutrefresh(helper.win);
 	free(help_line);
 }
@@ -224,8 +224,8 @@ unsigned long  popup_question(const char *qline1, const char *qline2, popup_type
 	// Draw border and message
 	box(popup, 0, 0);
 	wattron(popup, A_BOLD);
-	mvwprintw(popup, 1, 1, qline1);
-	mvwprintw(popup, 2, 1, qline2);
+	mvwprintw(popup, 1, 1, "%s", qline1);
+	mvwprintw(popup, 2, 1, "%s", qline2);
 	wattroff(popup, A_BOLD);
 	
 	// Show it
