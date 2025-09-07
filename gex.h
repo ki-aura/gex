@@ -25,9 +25,9 @@
 #define KEY_MAC_ENTER 10	// KEY_ENTER already defined as send key for terminal
 #define KEY_TAB 9
 #define KEY_SPACE 32
-#define KEY_BKSPC 127
+#define KEY_MAC_DELETE 127
 #define KEY_LEFT_PROXY 222
-
+#define KEY_NCURSES_BACKSPACE KEY_BACKSPACE
 
 // types of popup question
 typedef enum { 	

@@ -370,7 +370,8 @@ bool undo = false;
 		app.in_hex = !app.in_hex;
 		break; 
 
-	case KEY_BKSPC:
+	case KEY_NCURSES_BACKSPACE:
+	case KEY_MAC_DELETE:
 		// first move left 
 		e_handle_keys(KEY_LEFT);
 		// now set undo flag for any changes on this char or nibble 
