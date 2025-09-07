@@ -3,7 +3,7 @@ CFLAGS_COMMON  = -Wextra
 CFLAGS_DEBUG = -g
 LIBS         = -lncurses -lpanel -lmenu
 TARGET       = gex
-SRC          = gex.c dp.c view_mode.c file_handling.c edit_mode.c
+SRC          = gex.c view_mode.c file_handling.c edit_mode.c
 OBJ          = $(SRC:.c=.o)
 
 .PHONY: all clean tidy asan tsan release
@@ -20,7 +20,15 @@ tsan: CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_DEBUG) -fsanitize=thread,undefined
 tsan: $(TARGET)
 
 tidy:
-	xcrun clang-tidy $(SRC) -- $(CFLAGS_COMMON) $(LIBS)
+	xcrun clang-tidy $(SRC) \
+		-checks='clang-diagnostic-*,clang-analyzer-*,misc-unused-parameters' \
+		-- -Wall -Wextra
+
+maxtidy:
+	xcrun clang-tidy $(SRC) \
+		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*,-misc-include-cleaner' \
+		-- -Wall -Wextra
+
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LIBS)

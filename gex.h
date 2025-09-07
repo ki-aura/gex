@@ -131,7 +131,6 @@ typedef struct {
 	int cur_col;
 	int cur_digit;	// which hex digit (hinib lownib space) the cursor is on
 	bool is_lnib;	// are we on the left nibble (hi nibble)
-	bool changes_made;	// have we changed anything?
 } hex_windef;
 
 typedef struct {

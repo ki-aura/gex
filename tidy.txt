@@ -1,0 +1,506 @@
+xcrun clang-tidy gex.c view_mode.c file_handling.c edit_mode.c \
+		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*' \
+		-- -Wall -Wextra
+/Users/matt/Projects/hello/hexed/edit_mode.c:45:16: warning: no header providing "KEY_HELP" is directly included [misc-include-cleaner]
+   45 |         e_handle_keys(KEY_HELP); // a key that will drop through to the display updates
+      |                       ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:54:7: warning: no header providing "KEY_END" is directly included [misc-include-cleaner]
+   54 |         case KEY_END:
+      |              ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:67:7: warning: no header providing "KEY_LEFT" is directly included [misc-include-cleaner]
+   67 |         case KEY_LEFT:
+      |              ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:137:7: warning: no header providing "KEY_RIGHT" is directly included [misc-include-cleaner]
+  137 |         case KEY_RIGHT:
+      |              ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:203:7: warning: no header providing "KEY_UP" is directly included [misc-include-cleaner]
+  203 |         case KEY_UP:
+      |              ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:215:7: warning: no header providing "KEY_DOWN" is directly included [misc-include-cleaner]
+  215 |         case KEY_DOWN:
+      |              ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:230:7: warning: no header providing "KEY_NPAGE" is directly included [misc-include-cleaner]
+  230 |         case KEY_NPAGE:
+      |              ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:342:6: warning: function 'e_handle_keys' is within a recursive call chain [misc-no-recursion]
+  342 | void e_handle_keys(int k)
+      |      ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:342:6: note: example recursive call chain, starting from function 'e_handle_keys'
+/Users/matt/Projects/hello/hexed/edit_mode.c:373:3: note: Frame #1: function 'e_handle_keys' calls function 'e_handle_keys' here:
+  373 |                 e_handle_keys(KEY_LEFT);
+      |                 ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:373:3: note: ... which was the starting point of the recursive call chain; there may be other cycles
+/Users/matt/Projects/hello/hexed/edit_mode.c:350:7: warning: no header providing "KEY_HOME" is directly included [misc-include-cleaner]
+  350 |         case KEY_HOME:
+      |              ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:357:7: warning: no header providing "KEY_PPAGE" is directly included [misc-include-cleaner]
+  357 |         case KEY_PPAGE:
+      |              ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:402:11: warning: no header providing "kh_get" is directly included [misc-include-cleaner]
+    1 |                         slot = kh_get(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx));
+      |                                ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:402:39: warning: no header providing "int64_t" is directly included [misc-include-cleaner]
+    2 |                         slot = kh_get(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx));
+      |                                                            ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:403:16: warning: no header providing "kh_end" is directly included [misc-include-cleaner]
+  403 |                         if (slot != kh_end(app.edmap)) {
+      |                                     ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:407:5: warning: no header providing "kh_del" is directly included [misc-include-cleaner]
+  407 |                                 kh_del(charmap, app.edmap, slot);
+      |                                 ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:415:12: warning: no header providing "isprint" is directly included [misc-include-cleaner]
+    2 |                             if (isprint(k)) {
+      |                                 ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:423:13: warning: no header providing "kh_put" is directly included [misc-include-cleaner]
+  423 |                                         slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
+      |                                                ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:425:6: warning: no header providing "kh_val" is directly included [misc-include-cleaner]
+  425 |                                         kh_val(app.edmap, slot) = (unsigned char)k;
+      |                                         ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:475:3: warning: no header providing "wnoutrefresh" is directly included [misc-include-cleaner]
+    2 |                 wnoutrefresh(ascii.win);        
+      |                 ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:476:3: warning: no header providing "wmove" is directly included [misc-include-cleaner]
+  476 |                 wmove(hex.win, hex.cur_row, hex.cur_col);
+      |                 ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:483:2: warning: no header providing "doupdate" is directly included [misc-include-cleaner]
+  483 |         doupdate();
+      |         ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:502:2: warning: no header providing "kh_clear" is directly included [misc-include-cleaner]
+  502 |         kh_clear(charmap, app.edmap);
+      |         ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:510:2: warning: no header providing "curs_set" is directly included [misc-include-cleaner]
+  510 |         curs_set(2);
+      |         ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:512:2: warning: no header providing "wrefresh" is directly included [misc-include-cleaner]
+  512 |         wrefresh(hex.win);
+      |         ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:520:8: warning: no header providing "KEY_RESIZE" is directly included [misc-include-cleaner]
+  520 |         if(k==KEY_RESIZE) e_exit = true;
+      |               ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:522:6: warning: no header providing "kh_size" is directly included [misc-include-cleaner]
+  522 |                 if(kh_size(app.edmap) == 0) e_exit = true;
+      |                    ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:531:3: warning: no header providing "free" is directly included [misc-include-cleaner]
+    2 |                 free(hex.gc_copy);
+      |                 ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:544:2: warning: no header providing "memset" is directly included [misc-include-cleaner]
+  544 |         memset(hex.gc_copy, ' ', (hex.grid * 3));
+      |         ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:583:17: warning: no header providing "malloc" is directly included [misc-include-cleaner]
+  583 |         hex.map_copy = malloc(hex.map_copy_len + 1);
+      |                        ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:584:2: warning: no header providing "memcpy" is directly included [misc-include-cleaner]
+  584 |         memcpy(hex.map_copy, (app.map + hex.v_start), hex.map_copy_len);
+      |         ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:597:2: warning: no header providing "box" is directly included [misc-include-cleaner]
+  597 |         box(hex.win, 0, 0);
+      |         ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:616:13: warning: no header providing "wattron" is directly included [misc-include-cleaner]
+  616 |                         if (chg) wattron(hex.win, COLOR_PAIR(1) | A_BOLD);
+      |                                  ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:616:30: warning: no header providing "COLOR_PAIR" is directly included [misc-include-cleaner]
+  616 |                         if (chg) wattron(hex.win, COLOR_PAIR(1) | A_BOLD);
+      |                                                   ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:616:46: warning: no header providing "A_BOLD" is directly included [misc-include-cleaner]
+  616 |                         if (chg) wattron(hex.win, COLOR_PAIR(1) | A_BOLD);
+      |                                                                   ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:617:4: warning: no header providing "mvwprintw" is directly included [misc-include-cleaner]
+  617 |                         mvwprintw(hex.win, hr, hc, "%c", hex.gc_copy[i]);
+      |                         ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:618:13: warning: no header providing "wattroff" is directly included [misc-include-cleaner]
+  618 |                         if (chg) wattroff(hex.win,COLOR_PAIR(1) |  A_BOLD);
+      |                                  ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:655:6: warning: function 'e_save_changes' is within a recursive call chain [misc-no-recursion]
+  655 | void e_save_changes(){
+      |      ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:666:7: warning: no header providing "msync" is directly included [misc-include-cleaner]
+    2 |                 if (msync(app.map, app.fsize, MS_SYNC) < 0) {
+      |                     ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:666:33: warning: no header providing "MS_SYNC" is directly included [misc-include-cleaner]
+  666 |                 if (msync(app.map, app.fsize, MS_SYNC) < 0) {
+      |                                               ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:667:4: warning: no header providing "snprintf" is directly included [misc-include-cleaner]
+    2 |                         snprintf(tmp, 200, "msync error %s", strerror(errno)); DP(tmp); 
+      |                         ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:667:41: warning: no header providing "strerror" is directly included [misc-include-cleaner]
+    2 |                         snprintf(tmp, 200, "msync error %s", strerror(errno)); DP(tmp); 
+      |                                                              ^
+/Users/matt/Projects/hello/hexed/edit_mode.c:667:50: warning: no header providing "errno" is directly included [misc-include-cleaner]
+    2 |                         snprintf(tmp, 200, "msync error %s", strerror(errno)); DP(tmp); 
+      |                                                                       ^
+/Users/matt/Projects/hello/hexed/file_handling.c:9:2: warning: no header providing "fputs" is directly included [misc-include-cleaner]
+    2 | #include "file_handling.h"
+    3 | 
+    4 | bool open_file(int argc, char *argv[])
+    5 | {
+    6 | 
+    7 |         // check we have a file name
+    8 |         if (argc != 2) {
+    9 |         fputs("Usage: %s <file>\n", stderr);
+      |         ^
+/Users/matt/Projects/hello/hexed/file_handling.c:9:30: warning: no header providing "stderr" is directly included [misc-include-cleaner]
+    9 |         fputs("Usage: %s <file>\n", stderr);
+      |                                     ^
+/Users/matt/Projects/hello/hexed/file_handling.c:17:11: warning: no header providing "open" is directly included [misc-include-cleaner]
+    2 | #include "file_handling.h"
+    3 | 
+    4 | bool open_file(int argc, char *argv[])
+    5 | {
+    6 | 
+    7 |         // check we have a file name
+    8 |         if (argc != 2) {
+    9 |         fputs("Usage: %s <file>\n", stderr);
+   10 |                 DP("no filename given");
+   11 |                 return false;
+   12 |         } else {
+   13 |                 app.fname = argv[1];
+   14 |         }
+   15 | 
+   16 |         // try to open it
+   17 |         app.fd = open(argv[1], O_RDWR);
+      |                  ^
+/Users/matt/Projects/hello/hexed/file_handling.c:17:25: warning: no header providing "O_RDWR" is directly included [misc-include-cleaner]
+   17 |         app.fd = open(argv[1], O_RDWR);
+      |                                ^
+/Users/matt/Projects/hello/hexed/file_handling.c:24:6: warning: no header providing "fstat" is directly included [misc-include-cleaner]
+    2 |         if (fstat(app.fd, &app.fs) < 0) {
+      |             ^
+/Users/matt/Projects/hello/hexed/file_handling.c:26:3: warning: no header providing "close" is directly included [misc-include-cleaner]
+    2 |                 close(app.fd);
+      |                 ^
+/Users/matt/Projects/hello/hexed/file_handling.c:39:12: warning: no header providing "mmap" is directly included [misc-include-cleaner]
+    2 |         app.map = mmap(NULL, app.fsize, PROT_READ | PROT_WRITE, MAP_SHARED, app.fd, 0);
+      |                   ^
+/Users/matt/Projects/hello/hexed/file_handling.c:39:17: warning: no header providing "NULL" is directly included [misc-include-cleaner]
+    2 |         app.map = mmap(NULL, app.fsize, PROT_READ | PROT_WRITE, MAP_SHARED, app.fd, 0);
+      |                        ^
+/Users/matt/Projects/hello/hexed/file_handling.c:39:34: warning: no header providing "PROT_READ" is directly included [misc-include-cleaner]
+   39 |         app.map = mmap(NULL, app.fsize, PROT_READ | PROT_WRITE, MAP_SHARED, app.fd, 0);
+      |                                         ^
+/Users/matt/Projects/hello/hexed/file_handling.c:39:46: warning: no header providing "PROT_WRITE" is directly included [misc-include-cleaner]
+   39 |         app.map = mmap(NULL, app.fsize, PROT_READ | PROT_WRITE, MAP_SHARED, app.fd, 0);
+      |                                                     ^
+/Users/matt/Projects/hello/hexed/file_handling.c:39:58: warning: no header providing "MAP_SHARED" is directly included [misc-include-cleaner]
+   39 |         app.map = mmap(NULL, app.fsize, PROT_READ | PROT_WRITE, MAP_SHARED, app.fd, 0);
+      |                                                                 ^
+/Users/matt/Projects/hello/hexed/file_handling.c:40:17: warning: no header providing "MAP_FAILED" is directly included [misc-include-cleaner]
+   40 |         if (app.map == MAP_FAILED) {
+      |                        ^
+/Users/matt/Projects/hello/hexed/file_handling.c:52:6: warning: no header providing "munmap" is directly included [misc-include-cleaner]
+   52 |         if (munmap(app.map, app.fsize) < 0) {
+      |             ^
+/Users/matt/Projects/hello/hexed/gex.c:9:32: warning: no header providing "NULL" is directly included [misc-include-cleaner]
+    5 | 
+    6 | 
+    7 | // Global variables
+    8 | appdef app = {.mode=VIEW_MODE};
+    9 | status_windef status = {.win = NULL};
+      |                                ^
+/Users/matt/Projects/hello/hexed/gex.c:15:1: warning: no header providing "khiter_t" is directly included [misc-include-cleaner]
+    2 | #include "file_handling.h"
+    3 | #include "view_mode.h"
+    4 | #include "edit_mode.h"
+    5 | 
+    6 | 
+    7 | // Global variables
+    8 | appdef app = {.mode=VIEW_MODE};
+    9 | status_windef status = {.win = NULL};
+   10 | helper_windef helper = {.win = NULL};
+   11 | hex_windef hex = {.win = NULL, .gc = NULL};
+   12 | ascii_windef ascii = {.win = NULL, .gc = NULL};
+   13 | char app_mode_desc[5][10] = {"Edit  ", "Insert", "Delete", "View  ", "Keys  "};
+   14 | char *tmp = NULL;
+   15 | khiter_t slot;
+      | ^
+/Users/matt/Projects/hello/hexed/gex.c:17:1: warning: no header providing "MEVENT" is directly included [misc-include-cleaner]
+    5 | 
+    6 | 
+    7 | // Global variables
+    8 | appdef app = {.mode=VIEW_MODE};
+    9 | status_windef status = {.win = NULL};
+   10 | helper_windef helper = {.win = NULL};
+   11 | hex_windef hex = {.win = NULL, .gc = NULL};
+   12 | ascii_windef ascii = {.win = NULL, .gc = NULL};
+   13 | char app_mode_desc[5][10] = {"Edit  ", "Insert", "Delete", "View  ", "Keys  "};
+   14 | char *tmp = NULL;
+   15 | khiter_t slot;
+   16 | int khret;
+   17 | MEVENT event;
+      | ^
+/Users/matt/Projects/hello/hexed/gex.c:23:2: warning: no header providing "initscr" is directly included [misc-include-cleaner]
+   23 |         initscr();
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:26:1: warning: no header providing "mousemask" is directly included [misc-include-cleaner]
+   26 | mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED |
+      | ^
+/Users/matt/Projects/hello/hexed/gex.c:26:11: warning: no header providing "BUTTON1_PRESSED" is directly included [misc-include-cleaner]
+   26 | mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED |
+      |           ^
+/Users/matt/Projects/hello/hexed/gex.c:26:29: warning: no header providing "BUTTON1_RELEASED" is directly included [misc-include-cleaner]
+   26 | mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED |
+      |                             ^
+/Users/matt/Projects/hello/hexed/gex.c:27:11: warning: no header providing "BUTTON1_CLICKED" is directly included [misc-include-cleaner]
+   27 |           BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED |
+      |           ^
+/Users/matt/Projects/hello/hexed/gex.c:27:29: warning: no header providing "BUTTON1_DOUBLE_CLICKED" is directly included [misc-include-cleaner]
+   27 |           BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED |
+      |                             ^
+/Users/matt/Projects/hello/hexed/gex.c:28:11: warning: no header providing "BUTTON1_TRIPLE_CLICKED" is directly included [misc-include-cleaner]
+   28 |           BUTTON1_TRIPLE_CLICKED, NULL);
+      |           ^
+/Users/matt/Projects/hello/hexed/gex.c:29:2: warning: no header providing "start_color" is directly included [misc-include-cleaner]
+   29 |         start_color();
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:30:2: warning: no header providing "use_default_colors" is directly included [misc-include-cleaner]
+   30 |         use_default_colors(); 
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:31:2: warning: no header providing "init_pair" is directly included [misc-include-cleaner]
+   31 |         init_pair(1, COLOR_RED, -1);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:31:15: warning: no header providing "COLOR_RED" is directly included [misc-include-cleaner]
+   31 |         init_pair(1, COLOR_RED, -1);
+      |                      ^
+/Users/matt/Projects/hello/hexed/gex.c:33:2: warning: no header providing "cbreak" is directly included [misc-include-cleaner]
+   33 |         cbreak();                 // Line buffering disabled, Pass on everything
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:34:2: warning: no header providing "noecho" is directly included [misc-include-cleaner]
+   34 |         noecho();                 // Don't echo input
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:35:2: warning: no header providing "curs_set" is directly included [misc-include-cleaner]
+   35 |         curs_set(0);            
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:36:2: warning: no header providing "keypad" is directly included [misc-include-cleaner]
+   36 |         keypad(stdscr, true);    // Enable function keys (like KEY_RESIZE )
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:36:9: warning: no header providing "stdscr" is directly included [misc-include-cleaner]
+   36 |         keypad(stdscr, true);    // Enable function keys (like KEY_RESIZE )
+      |                ^
+/Users/matt/Projects/hello/hexed/gex.c:37:2: warning: no header providing "set_escdelay" is directly included [misc-include-cleaner]
+   37 |         set_escdelay(50);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:40:14: warning: no header providing "kh_init" is directly included [misc-include-cleaner]
+   40 |         app.edmap = kh_init(charmap);
+      |                     ^
+/Users/matt/Projects/hello/hexed/gex.c:47:8: warning: no header providing "malloc" is directly included [misc-include-cleaner]
+    5 |         tmp = malloc(256);
+      |               ^
+/Users/matt/Projects/hello/hexed/gex.c:57:2: warning: no header providing "clear" is directly included [misc-include-cleaner]
+   57 |         clear();
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:58:2: warning: no header providing "refresh" is directly included [misc-include-cleaner]
+   58 |         refresh();
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:59:2: warning: no header providing "endwin" is directly included [misc-include-cleaner]
+   59 |         endwin();
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:60:2: warning: no header providing "free" is directly included [misc-include-cleaner]
+   60 |         free(tmp);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:61:2: warning: no header providing "kh_destroy" is directly included [misc-include-cleaner]
+   61 |         kh_destroy(charmap, app.edmap);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:64:16: warning: no header providing "SIGINT" is directly included [misc-include-cleaner]
+   64 |         if (signum == SIGINT){
+      |                       ^
+/Users/matt/Projects/hello/hexed/gex.c:65:3: warning: no header providing "fputs" is directly included [misc-include-cleaner]
+    5 |                 fputs("Ended by Ctrl+C\n", stderr);
+      |                 ^
+/Users/matt/Projects/hello/hexed/gex.c:65:30: warning: no header providing "stderr" is directly included [misc-include-cleaner]
+   65 |                 fputs("Ended by Ctrl+C\n", stderr);
+      |                                            ^
+/Users/matt/Projects/hello/hexed/gex.c:66:3: warning: no header providing "exit" is directly included [misc-include-cleaner]
+   66 |                 exit(EXIT_FAILURE);}
+      |                 ^
+/Users/matt/Projects/hello/hexed/gex.c:66:8: warning: no header providing "EXIT_FAILURE" is directly included [misc-include-cleaner]
+   66 |                 exit(EXIT_FAILURE);}
+      |                      ^
+/Users/matt/Projects/hello/hexed/gex.c:67:16: warning: no header providing "SIGQUIT" is directly included [misc-include-cleaner]
+    5 |         if (signum == SIGQUIT){
+      |                       ^
+/Users/matt/Projects/hello/hexed/gex.c:70:16: warning: no header providing "SIGTERM" is directly included [misc-include-cleaner]
+   70 |         if (signum == SIGTERM){
+      |                       ^
+/Users/matt/Projects/hello/hexed/gex.c:80:29: warning: no header providing "KEY_RESIZE" is directly included [misc-include-cleaner]
+   80 |         if ((k==KEY_ESCAPE) || (k==KEY_RESIZE)) {
+      |                                    ^
+/Users/matt/Projects/hello/hexed/gex.c:101:4: warning: no header providing "doupdate" is directly included [misc-include-cleaner]
+  101 |                         doupdate();
+      |                         ^
+/Users/matt/Projects/hello/hexed/gex.c:153:2: warning: no header providing "box" is directly included [misc-include-cleaner]
+  153 |         box(status.win, 0, 0);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:154:2: warning: no header providing "mvwprintw" is directly included [misc-include-cleaner]
+  154 |         mvwprintw(status.win, 1, 1, "Mode %s Fsize %lu offset %lu to %lu       ", app_mode_desc[app.mode], 
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:158:2: warning: no header providing "wnoutrefresh" is directly included [misc-include-cleaner]
+  158 |         wnoutrefresh(status.win);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:165:2: warning: no header providing "memset" is directly included [misc-include-cleaner]
+  165 |         memset(help_line, ' ', helper.width - 2);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:183:13: warning: no header providing "isprint" is directly included [misc-include-cleaner]
+    5 |     return (isprint(b) ? (char)b : '.');
+      |             ^
+/Users/matt/Projects/hello/hexed/gex.c:214:10: warning: no header providing "strlen" is directly included [misc-include-cleaner]
+    5 |         qlen = (strlen(qline1) > strlen(qline2)) ? strlen(qline1) : strlen(qline2);
+      |                 ^
+/Users/matt/Projects/hello/hexed/gex.c:217:2: warning: no header providing "WINDOW" is directly included [misc-include-cleaner]
+  217 |         WINDOW *popup = newwin(4, (qlen+2), ((app.rows - 4) / 2), 
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:217:18: warning: no header providing "newwin" is directly included [misc-include-cleaner]
+  217 |         WINDOW *popup = newwin(4, (qlen+2), ((app.rows - 4) / 2), 
+      |                         ^
+/Users/matt/Projects/hello/hexed/gex.c:219:2: warning: no header providing "PANEL" is directly included [misc-include-cleaner]
+    5 |         PANEL  *panel = new_panel(popup);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:219:18: warning: no header providing "new_panel" is directly included [misc-include-cleaner]
+  219 |         PANEL  *panel = new_panel(popup);
+      |                         ^
+/Users/matt/Projects/hello/hexed/gex.c:220:16: warning: no header providing "TRUE" is directly included [misc-include-cleaner]
+  220 |         keypad(popup, TRUE); // Enable keyboard input for the window
+      |                       ^
+/Users/matt/Projects/hello/hexed/gex.c:224:2: warning: no header providing "wattron" is directly included [misc-include-cleaner]
+  224 |         wattron(popup, A_BOLD);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:224:17: warning: no header providing "A_BOLD" is directly included [misc-include-cleaner]
+  224 |         wattron(popup, A_BOLD);
+      |                        ^
+/Users/matt/Projects/hello/hexed/gex.c:227:2: warning: no header providing "wattroff" is directly included [misc-include-cleaner]
+  227 |         wattroff(popup, A_BOLD);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:231:2: warning: no header providing "update_panels" is directly included [misc-include-cleaner]
+  231 |         update_panels();
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:237:9: warning: no header providing "wgetch" is directly included [misc-include-cleaner]
+  237 |                         ch = wgetch(popup);
+      |                              ^
+/Users/matt/Projects/hello/hexed/gex.c:249:3: warning: no header providing "echo" is directly included [misc-include-cleaner]
+  249 |                 echo(); oldcs2 = curs_set(2);
+      |                 ^
+/Users/matt/Projects/hello/hexed/gex.c:250:3: warning: no header providing "mvwgetnstr" is directly included [misc-include-cleaner]
+  250 |                 mvwgetnstr(popup, 2, 1, tmp, 20); // 20 is max length of a 64bit unsigned long
+      |                 ^
+/Users/matt/Projects/hello/hexed/gex.c:254:3: warning: no header providing "errno" is directly included [misc-include-cleaner]
+    5 |                 errno = 0; // Clear errno before the call
+      |                 ^
+/Users/matt/Projects/hello/hexed/gex.c:255:12: warning: no header providing "strtoul" is directly included [misc-include-cleaner]
+  255 |                 answer = strtoul(tmp, &endptr, 10);
+      |                          ^
+/Users/matt/Projects/hello/hexed/gex.c:258:69: warning: no header providing "ERANGE" is directly included [misc-include-cleaner]
+  258 |                 if (tmp[0] == '-' || endptr == tmp || *endptr != '\0' || errno == ERANGE)
+      |                                                                                   ^
+/Users/matt/Projects/hello/hexed/gex.c:265:2: warning: no header providing "hide_panel" is directly included [misc-include-cleaner]
+  265 |         hide_panel(panel);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:268:2: warning: no header providing "del_panel" is directly included [misc-include-cleaner]
+  268 |         del_panel(panel);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:269:2: warning: no header providing "delwin" is directly included [misc-include-cleaner]
+  269 |         delwin(popup);
+      |         ^
+/Users/matt/Projects/hello/hexed/gex.c:283:5: warning: no header providing "getbegyx" is directly included [misc-include-cleaner]
+  283 |     getbegyx(hex.win, win_y, win_x);
+      |     ^
+/Users/matt/Projects/hello/hexed/gex.c:284:5: warning: no header providing "getmaxyx" is directly included [misc-include-cleaner]
+  284 |     getmaxyx(hex.win, win_rows, win_cols);
+      |     ^
+/Users/matt/Projects/hello/hexed/gex.c:311:1: warning: no header providing "signal" is directly included [misc-include-cleaner]
+    5 | signal(SIGINT, final_close);
+      | ^
+/Users/matt/Projects/hello/hexed/gex.c:322:12: warning: no header providing "KEY_HELP" is directly included [misc-include-cleaner]
+  322 |                 int ch = KEY_HELP; // doesn't trigger anything
+      |                          ^
+/Users/matt/Projects/hello/hexed/gex.c:327:9: warning: no header providing "getch" is directly included [misc-include-cleaner]
+  327 |                         ch = getch();
+      |                              ^
+/Users/matt/Projects/hello/hexed/gex.c:329:9: warning: no header providing "KEY_MOUSE" is directly included [misc-include-cleaner]
+  329 |                         case KEY_MOUSE: // only handle in Edit mode
+      |                              ^
+/Users/matt/Projects/hello/hexed/gex.c:330:9: warning: no header providing "getmouse" is directly included [misc-include-cleaner]
+  330 |                         if ((getmouse(&event) == OK) && (app.mode == EDIT_MODE)) {
+      |                              ^
+/Users/matt/Projects/hello/hexed/gex.c:330:29: warning: no header providing "OK" is directly included [misc-include-cleaner]
+  330 |                         if ((getmouse(&event) == OK) && (app.mode == EDIT_MODE)) {
+      |                                                  ^
+/Users/matt/Projects/hello/hexed/gex.c:332:11: warning: no header providing "mmask_t" is directly included [misc-include-cleaner]
+  332 |                                 const mmask_t CLICKY = BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | 
+      |                                       ^
+/Users/matt/Projects/hello/hexed/view_mode.c:12:7: warning: no header providing "KEY_HOME" is directly included [misc-include-cleaner]
+   12 |         case KEY_HOME:
+      |              ^
+/Users/matt/Projects/hello/hexed/view_mode.c:16:7: warning: no header providing "KEY_END" is directly included [misc-include-cleaner]
+   16 |         case KEY_END:
+      |              ^
+/Users/matt/Projects/hello/hexed/view_mode.c:21:7: warning: no header providing "KEY_RIGHT" is directly included [misc-include-cleaner]
+   21 |         case KEY_RIGHT:
+      |              ^
+/Users/matt/Projects/hello/hexed/view_mode.c:25:7: warning: no header providing "KEY_DOWN" is directly included [misc-include-cleaner]
+   25 |         case KEY_DOWN:
+      |              ^
+/Users/matt/Projects/hello/hexed/view_mode.c:28:7: warning: no header providing "KEY_NPAGE" is directly included [misc-include-cleaner]
+   28 |         case KEY_NPAGE:
+      |              ^
+/Users/matt/Projects/hello/hexed/view_mode.c:33:7: warning: no header providing "KEY_LEFT" is directly included [misc-include-cleaner]
+   33 |         case KEY_LEFT:
+      |              ^
+/Users/matt/Projects/hello/hexed/view_mode.c:38:7: warning: no header providing "KEY_UP" is directly included [misc-include-cleaner]
+   38 |         case KEY_UP:
+      |              ^
+/Users/matt/Projects/hello/hexed/view_mode.c:46:7: warning: no header providing "KEY_PPAGE" is directly included [misc-include-cleaner]
+   46 |         case KEY_PPAGE:
+      |              ^
+/Users/matt/Projects/hello/hexed/view_mode.c:70:3: warning: no header providing "free" is directly included [misc-include-cleaner]
+    2 |                 free(hex.gc);
+      |                 ^
+/Users/matt/Projects/hello/hexed/view_mode.c:73:12: warning: no header providing "malloc" is directly included [misc-include-cleaner]
+   73 |                 hex.gc = malloc((hex.grid * 3) + 1);
+      |                          ^
+/Users/matt/Projects/hello/hexed/view_mode.c:76:3: warning: no header providing "memset" is directly included [misc-include-cleaner]
+    2 |                 memset(hex.gc, ' ', (hex.grid * 3));
+      |                 ^
+/Users/matt/Projects/hello/hexed/view_mode.c:94:2: warning: no header providing "box" is directly included [misc-include-cleaner]
+   94 |         box(hex.win, 0, 0);
+      |         ^
+/Users/matt/Projects/hello/hexed/view_mode.c:104:4: warning: no header providing "mvwprintw" is directly included [misc-include-cleaner]
+    2 |                         mvwprintw(hex.win, hr, hc, "%c", hex.gc[i]);
+      |                         ^
+/Users/matt/Projects/hello/hexed/view_mode.c:111:2: warning: no header providing "wnoutrefresh" is directly included [misc-include-cleaner]
+  111 |         wnoutrefresh(hex.win);
+      |         ^
+/Users/matt/Projects/hello/hexed/view_mode.c:144:3: warning: no header providing "doupdate" is directly included [misc-include-cleaner]
+  144 |                 doupdate();
+      |                 ^
+/Users/matt/Projects/hello/hexed/view_mode.c:151:2: warning: no header providing "getmaxyx" is directly included [misc-include-cleaner]
+  151 |         getmaxyx(stdscr, app.rows, app.cols);
+      |         ^
+/Users/matt/Projects/hello/hexed/view_mode.c:151:11: warning: no header providing "stdscr" is directly included [misc-include-cleaner]
+  151 |         getmaxyx(stdscr, app.rows, app.cols);
+      |                  ^
+/Users/matt/Projects/hello/hexed/view_mode.c:185:2: warning: no header providing "clear" is directly included [misc-include-cleaner]
+  185 |         clear();
+      |         ^
+/Users/matt/Projects/hello/hexed/view_mode.c:186:2: warning: no header providing "refresh" is directly included [misc-include-cleaner]
+  186 |         refresh();
+      |         ^
+/Users/matt/Projects/hello/hexed/view_mode.c:191:3: warning: no header providing "mvprintw" is directly included [misc-include-cleaner]
+  191 |                 mvprintw(app.rows / 2, (app.cols - 45) / 2, "Screen is too small. Please resize to continue.");
+      |                 ^
+/Users/matt/Projects/hello/hexed/view_mode.c:195:16: warning: no header providing "newwin" is directly included [misc-include-cleaner]
+  195 |                 status.win = newwin(status.height, status.width, 0, 0);
+      |                              ^
+/Users/matt/Projects/hello/hexed/view_mode.c:200:16: warning: no header providing "new_panel" is directly included [misc-include-cleaner]
+    2 |                 status.pan = new_panel(status.win);
+      |                              ^
+/Users/matt/Projects/hello/hexed/view_mode.c:223:20: warning: no header providing "NULL" is directly included [misc-include-cleaner]
+    2 |         if (status.win != NULL) {
+      |                           ^
+/Users/matt/Projects/hello/hexed/view_mode.c:224:3: warning: no header providing "del_panel" is directly included [misc-include-cleaner]
+  224 |                 del_panel(status.pan);
+      |                 ^
+/Users/matt/Projects/hello/hexed/view_mode.c:225:3: warning: no header providing "delwin" is directly included [misc-include-cleaner]
+  225 |                 delwin(status.win);
+      |                 ^
+/Users/matt/Projects/hello/hexed/view_mode.c:247:2: warning: no header providing "snprintf" is directly included [misc-include-cleaner]
+    2 |         snprintf(tmp, 60, "Goto Byte? (0-%lu)", (unsigned long)app.fsize);
+      |         ^

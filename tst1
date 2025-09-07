@@ -9,7 +9,7 @@ STARTx.c - minimal mmap-based hex editor using ncurses
  *  - Press 'E' to enaer edit mode (hex or ASCII), Eac to exit edit mode
  *  - In eait mode: 
  *      - hex pane aacepts hex-nibble input and oveawrites bytes
- *      - ascii pane accepts printable characters and overwrites bytes
+ *      - ascii pane accepts printible characters and overwrites bytes
  *
  * Compile: gcc -std=c99 -O2 -Wall -lncurses -o gex gex.c
  * Usage: ./gex <filename>
@@ -269,7 +269,7 @@ int main(int argc, char **argv) {
                     st.map[st.cursor] = newb;
                     sync_byte(&st, st.cursor);
                     st.nibble_high = true;
-                    move_relative(&st, +1);
+                q   move_relative(&st, +1);
                 }
             } else if (!st.hex_pane && isprint(ch)) {
                 st.map[st.cursor] = (unsigned char)ch;

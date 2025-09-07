@@ -1,5 +1,7 @@
 #include "gex.h"
 #include "edit_mode.h"
+#include "view_mode.h"
+
 
 void e_handle_click(clickwin win, int row, int col)
 {
@@ -26,7 +28,7 @@ void e_handle_click(clickwin win, int row, int col)
 		if(app.in_hex) app.in_hex = false;
 		hex.cur_row = row;
 		hex.cur_digit = col;
-		hex.cur_col = (col *3) -2;
+		hex.cur_col = (col *3) -2;		
 		hex.is_lnib=true;
 		// ascii boundary checks needed for and partially filled window
 	}
@@ -232,7 +234,7 @@ void e_handle_partial_grid_keys(int k)
 		hex.cur_row = hex.max_row;
 	else
 		hex.cur_row = hex.max_row -1;
-		break;
+	break;
 	}
 }
 
@@ -426,8 +428,7 @@ bool undo = false;
 				}
 				// Update the display only map
 				hex.map_copy[idx] = (unsigned char)k;
-				hex.changes_made = true;
-
+				
 				// trigger a refresh
 				e_build_grids_from_map_copy();
 				e_refresh_ascii();
@@ -446,7 +447,7 @@ bool undo = false;
 						kh_val(app.edmap, slot) = (unsigned char)((hex.map_copy[idx] & 0x0F) | (nibble << 4));
 						// Update the display only map
 						hex.map_copy[idx] = (hex.map_copy[idx] & 0x0F) | (nibble << 4);
-						hex.changes_made = true;
+					
 						// trigger a refresh
 						e_build_grids_from_map_copy();
 						e_refresh_ascii();
@@ -459,7 +460,6 @@ bool undo = false;
 						kh_val(app.edmap, slot) = (unsigned char)((hex.map_copy[idx] & 0xF0) | nibble);
 						// Update the display only map
 						hex.map_copy[idx] = (hex.map_copy[idx] & 0xF0) | nibble;
-						hex.changes_made = true;
 						// show changes
 						e_build_grids_from_map_copy();
 						e_refresh_ascii();
@@ -500,7 +500,6 @@ void init_edit_mode()
 	
 	// set edit mode coming in defaults
 	app.in_hex = true;	// start in hex screen
-	hex.changes_made = false;
 	// clear any historical changes
 	kh_clear(charmap, app.edmap);
 	// cursor starting location
@@ -537,7 +536,8 @@ void end_edit_mode(int k)
 		// clear any historical changes
 		kh_clear(charmap, app.edmap);		
 		// pass control back to main loop by setting mode back to view
-		app.mode = VIEW_MODE;
+		app.mode = VIEW_MODE; 
+		v_update_all_windows();
 	}	
 }
 
@@ -675,9 +675,10 @@ void e_save_changes(){
 		e_build_grids_from_map_copy();
 		e_refresh_ascii();
 		e_refresh_hex();
-		e_handle_keys(KEY_RIGHT);
+
+		end_edit_mode(KEY_HELP); // doesn't trigger anything
+		e_handle_keys(KEY_HELP); // just triggers the screen refresh
 	
-		hex.changes_made = FALSE;
 	}
 }
 

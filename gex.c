@@ -311,7 +311,6 @@ int main(int argc, char *argv[])
 signal(SIGINT, final_close);
 signal(SIGQUIT, final_close);
 signal(SIGTERM, final_close);
-int handled = 0;
 
 	// Initial app setup
 	initial_setup();
@@ -320,9 +319,8 @@ int handled = 0;
 	if (open_file(argc, argv)) {
 		// and go....
 		create_windows();
-		int ch;
+		int ch = KEY_HELP; // doesn't trigger anything
 		// Main loop to handle input
-		ch = '6'; // meaningless key
 		while (	(app.mode != VIEW_MODE) ||
 			((app.mode == VIEW_MODE) && (ch != 'q'))) {
 
@@ -352,7 +350,6 @@ int handled = 0;
 			
 			default:
 			if (!app.too_small) handle_global_keys(ch);
-//			ch = getch();
 			break;			
 			}
 		}
