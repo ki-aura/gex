@@ -166,7 +166,7 @@ void byte_to_hex(unsigned char b, char *out);
 char byte_to_ascii(unsigned char b);
 int hex_char_to_value(char c);
 unsigned char hex_to_byte(char high, char low);
-void DP(const char *msg);
+//void DP(const char *msg);
 
 // main loop
 void handle_global_keys(int k);

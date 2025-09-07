@@ -666,9 +666,7 @@ void e_save_changes(){
 		memcpy((app.map + hex.v_start), hex.map_copy, hex.map_copy_len);
 		
 		// and sync it out
-		if (msync(app.map, app.fsize, MS_SYNC) < 0) {
-			snprintf(tmp, 200, "msync error %s", strerror(errno)); DP(tmp); 
-		}
+		msync(app.map, app.fsize, MS_SYNC);
 		// clear change history as these are now permanent
 		kh_clear(charmap, app.edmap);
 		// refresh to get rid of old change highlights

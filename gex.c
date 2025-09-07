@@ -199,10 +199,12 @@ unsigned char hex_to_byte(char high, char low)
     return (hi << 4) | lo;
 }
 
+/*
 void DP(const char *msg)
 {	// debug popup
 	popup_question(msg, "", PTYPE_CONTINUE);
 }
+*/
 
 unsigned long  popup_question(const char *qline1, const char *qline2, popup_types pt) 
 {
