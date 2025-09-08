@@ -6,7 +6,8 @@
 void e_handle_click(clickwin win, int row, int col)
 {
 	// if we clicked outside hex or ascii windows then don't care
-	if(win == WIN_OTHER) return;//snprintf(tmp,200,"col %d digit %d row %d HiNib %d",hex.cur_col, hex.cur_digit, row, (int)hex.is_lnib); popup_question(tmp, "", PTYPE_CONTINUE);
+	if(win == WIN_OTHER) return;
+//snprintf(tmp,200,"col %d digit %d row %d HiNib %d",hex.cur_col, hex.cur_digit, row, (int)hex.is_lnib); popup_question(tmp, "", PTYPE_CONTINUE);
 	
 	// handle_full_grid_clicks 		
 	if(win == WIN_HEX) {
@@ -16,9 +17,9 @@ void e_handle_click(clickwin win, int row, int col)
 		hex.cur_digit = (col + 2)/3;
 		hex.cur_col = col; 
 		// move back 1 if we clicked on a space in the grid
-		if((hex.cur_col%3)==2)hex.cur_col--;
+		if((hex.cur_col%3)==0)hex.cur_col--;
 		// work out which nibble we're on
-		if((hex.cur_col%3)==0)hex.is_lnib=true; else hex.is_lnib=false;
+		if((hex.cur_col%3)==1)hex.is_lnib=true; else hex.is_lnib=false;
 
 	}
 	
@@ -27,7 +28,7 @@ void e_handle_click(clickwin win, int row, int col)
 		if(app.in_hex) app.in_hex = false;
 		hex.cur_row = row;
 		hex.cur_digit = col;
-		hex.cur_col = (col *3);		
+		hex.cur_col = (col *3) -2;		
 		hex.is_lnib=true;
 		// ascii boundary checks needed for and partially filled window
 	}
@@ -55,8 +56,8 @@ void e_handle_partial_grid_keys(int k)
 	case KEY_END:
 		// move end of current row
 		if(hex.cur_row < hex.max_row) {
-			hex.cur_col = (ascii.width*3) - 2; // l nibble of last digit
-			hex.cur_digit = ascii.width;	// first hex digit (takes 3 spaces)
+			hex.cur_col = (hex.digits*3) - 2; // l nibble of last digit
+			hex.cur_digit = hex.digits;	// first hex digit (takes 3 spaces)
 			hex.is_lnib = true;	// left nibble of that digit
 		} else {
 			hex.cur_col = hex.max_col -2; // l nibble of last digit
@@ -66,7 +67,7 @@ void e_handle_partial_grid_keys(int k)
 		break;
 
 	case KEY_LEFT:
-		// 1 ascii.width = lnib rnib space
+		// 1 hex.digits = lnib rnib space
 	if(hex.cur_row < hex.max_row) {
 	// we're on a normal row.
 		if(app.in_hex){
@@ -82,8 +83,8 @@ void e_handle_partial_grid_keys(int k)
 					hex.cur_digit--;
 					hex.is_lnib=false;
 				} else {
-					hex.cur_col=(ascii.width*3) - 1; //1 this time as go to right nibble
-					hex.cur_digit=ascii.width;	// first hex digit (takes 3 spaces)
+					hex.cur_col=(hex.digits*3) - 1; //1 this time as go to right nibble
+					hex.cur_digit=hex.digits;	// first hex digit (takes 3 spaces)
 					hex.is_lnib = false;	// left nibble of that digit
 				}
 			}
@@ -94,8 +95,8 @@ void e_handle_partial_grid_keys(int k)
 				hex.cur_digit--;
 				hex.is_lnib = true;
 			} else { // wrap col
-					hex.cur_col=(ascii.width*3) - 2;
-					hex.cur_digit=ascii.width;	// last hex digit (takes 3 spaces)
+					hex.cur_col=(hex.digits*3) - 2;
+					hex.cur_digit=hex.digits;	// last hex digit (takes 3 spaces)
 					hex.is_lnib = true;	// left nibble of that digit
 			}
 		}
@@ -126,7 +127,7 @@ void e_handle_partial_grid_keys(int k)
 				hex.cur_digit--;
 				hex.is_lnib = true;
 			} else { // wrap col
-					hex.cur_col = (ascii.width*3) - 2; 
+					hex.cur_col = (hex.digits*3) - 2; 
 					hex.cur_digit = hex.max_digit;	// last hex digit (takes 3 spaces)
 					hex.is_lnib = true;	// left nibble of that digit
 			}
@@ -136,7 +137,7 @@ void e_handle_partial_grid_keys(int k)
 		break;
 		
 	case KEY_RIGHT:
-		// 1 ascii.width = lnib rnib space
+		// 1 hex.digits = lnib rnib space
 	if(hex.cur_row < hex.max_row) {
 		if(app.in_hex){
 			if (hex.is_lnib){
@@ -146,7 +147,7 @@ void e_handle_partial_grid_keys(int k)
 			} else {
 				// we're on right nib. move 2 unless at end of row, 
 				// otherwise wrap back to start of row
-				if(hex.cur_digit < ascii.width){
+				if(hex.cur_digit < hex.digits){
 					hex.cur_col+=2;
 					hex.cur_digit++;
 					hex.is_lnib=true;
@@ -157,7 +158,7 @@ void e_handle_partial_grid_keys(int k)
 				}
 			}		
 		} else { // we're in ascii pane
-			if(hex.cur_digit < ascii.width){
+			if(hex.cur_digit < hex.digits){
 				hex.cur_col+=3;
 				hex.cur_digit++;
 				hex.is_lnib = true;
@@ -244,13 +245,13 @@ void e_handle_full_grid_keys(int k)
 
 	case KEY_END:
 		// move end of current row
-		hex.cur_col = (ascii.width*3) - 2; // l nibble of last digit
-		hex.cur_digit = ascii.width;	// first hex digit (takes 3 spaces)
+		hex.cur_col = (hex.digits*3) - 2; // l nibble of last digit
+		hex.cur_digit = hex.digits;	// first hex digit (takes 3 spaces)
 		hex.is_lnib = true;	// left nibble of that digit
 		break;
 
 	case KEY_LEFT:
-		// 1 ascii.width = lnib rnib space
+		// 1 hex.digits = lnib rnib space
 		// boundary is 1 to hex.width -1
 		if(app.in_hex){
 			if (!hex.is_lnib){
@@ -265,8 +266,8 @@ void e_handle_full_grid_keys(int k)
 					hex.cur_digit--;
 					hex.is_lnib=false;
 				} else {
-					hex.cur_col=(ascii.width*3) - 1; //1 this time as go to right nibble
-					hex.cur_digit=ascii.width;	// first hex digit (takes 3 spaces)
+					hex.cur_col=(hex.digits*3) - 1; //1 this time as go to right nibble
+					hex.cur_digit=hex.digits;	// first hex digit (takes 3 spaces)
 					hex.is_lnib = false;	// left nibble of that digit
 				}
 			}
@@ -277,8 +278,8 @@ void e_handle_full_grid_keys(int k)
 				hex.cur_digit--;
 				hex.is_lnib = true;
 			} else { // wrap col
-					hex.cur_col=(ascii.width*3) - 2;
-					hex.cur_digit=ascii.width;	// last hex digit (takes 3 spaces)
+					hex.cur_col=(hex.digits*3) - 2;
+					hex.cur_digit=hex.digits;	// last hex digit (takes 3 spaces)
 					hex.is_lnib = true;	// left nibble of that digit
 			}
 		}
@@ -286,7 +287,7 @@ void e_handle_full_grid_keys(int k)
 		break;
 		
 	case KEY_RIGHT:
-		// 1 ascii.width = lnib rnib space
+		// 1 hex.digits = lnib rnib space
 		// boundary is 1 to hex.width -1
 		if(app.in_hex){
 			if (hex.is_lnib){
@@ -296,7 +297,7 @@ void e_handle_full_grid_keys(int k)
 			} else {
 				// we're on right nib. move 2 unless at end of row, 
 				// otherwise wrap back to start of row
-				if(hex.cur_digit < ascii.width){
+				if(hex.cur_digit < hex.digits){
 					hex.cur_col+=2;
 					hex.cur_digit++;
 					hex.is_lnib=true;
@@ -307,7 +308,7 @@ void e_handle_full_grid_keys(int k)
 				}
 			}		
 		} else { // we're in ascii pane
-			if(hex.cur_digit < ascii.width){
+			if(hex.cur_digit < hex.digits){
 				hex.cur_col+=3;
 				hex.cur_digit++;
 				hex.is_lnib = true;
@@ -323,18 +324,18 @@ void e_handle_full_grid_keys(int k)
 		if(hex.cur_row > 1) 
 			hex.cur_row--;
 		else 
-			hex.cur_row = hex.height;
+			hex.cur_row = hex.rows;
 		break;
 		
 	case KEY_DOWN:
-		if(hex.cur_row < hex.height)
+		if(hex.cur_row < hex.rows)
 			hex.cur_row++;
 		else
 			hex.cur_row = 1;
 		break;
 
 	case KEY_NPAGE:
-		hex.cur_row = hex.height;
+		hex.cur_row = hex.rows;
 		break;
 	
 	}
@@ -396,7 +397,7 @@ bool undo = false;
 		
 	default: 	// handle non-movement - editing 		
 		// where are we in hex.gc_copy
-		idx = (((hex.cur_row-1) * ascii.width) + (hex.cur_digit-1));
+		idx = (((hex.cur_row-1) * hex.digits) + (hex.cur_digit-1));
 		
 		if (undo){
 			// backspace was pressed
@@ -404,6 +405,7 @@ bool undo = false;
 			slot = kh_get(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx));
 			if (slot != kh_end(app.edmap)) {
 				// set the bit back to the original map
+				hex.map_copy[idx] = app.map[hex.v_start + idx];
 				// remove the undo map 
 				kh_del(charmap, app.edmap, slot);
 				e_build_grids_from_map_copy();
@@ -426,6 +428,7 @@ bool undo = false;
 					kh_val(app.edmap, slot) = (unsigned char)k;
 				}
 				// Update the display only map
+				hex.map_copy[idx] = (unsigned char)k;
 				
 				// trigger a refresh
 				e_build_grids_from_map_copy();
@@ -442,9 +445,9 @@ bool undo = false;
 						// push the change onto the edit map
 						slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
 						//if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
-						kh_val(app.edmap, slot) = (unsigned char)((app.map[hex.v_start + idx] & 0x0F) | (nibble << 4));
+						kh_val(app.edmap, slot) = (unsigned char)((hex.map_copy[idx] & 0x0F) | (nibble << 4));
 						// Update the display only map
-						//hex.map_copy[idx] = (hex.map_copy[idx] & 0x0F) | (nibble << 4);
+						hex.map_copy[idx] = (hex.map_copy[idx] & 0x0F) | (nibble << 4);
 					
 						// trigger a refresh
 						e_build_grids_from_map_copy();
@@ -455,9 +458,9 @@ bool undo = false;
 						// push the change onto the edit map
 						slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
 						//if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
-						kh_val(app.edmap, slot) = (unsigned char)((app.map[hex.v_start + idx] & 0xF0) | nibble);
+						kh_val(app.edmap, slot) = (unsigned char)((hex.map_copy[idx] & 0xF0) | nibble);
 						// Update the display only map
-						//hex.map_copy[idx] = (hex.map_copy[idx] & 0xF0) | nibble;
+						hex.map_copy[idx] = (hex.map_copy[idx] & 0xF0) | nibble;
 						// show changes
 						e_build_grids_from_map_copy();
 						e_refresh_ascii();
@@ -483,20 +486,27 @@ bool undo = false;
 	doupdate();
 }
 
-void init_view_mode()
+void init_edit_mode()
 {
+	// set the helper bar to something mode helpful
+	refresh_status(); 
+	refresh_helper("Options: Escape Enter Tab"); 
+	doupdate();
+	
 	// grab a screen copy
-//	e_copy_screen();
+	e_copy_screen();
 	e_refresh_hex();
 	e_refresh_ascii();
 	doupdate();
 	
 	// set edit mode coming in defaults
 	app.in_hex = true;	// start in hex screen
+	// clear any historical changes
+	kh_clear(charmap, app.edmap);
 	// cursor starting location
-	hex.cur_row=0;
-	hex.cur_col=0;
-	hex.cur_digit=0;	// first hex digit (takes 3 spaces)
+	hex.cur_row=1;
+	hex.cur_col=1;
+	hex.cur_digit=1;	// first hex digit (takes 3 spaces)
 	hex.is_lnib = true;	// left nibble of that digit
 	
 	// show cursor
@@ -521,6 +531,11 @@ void end_edit_mode(int k)
 	if (e_exit){
 		// clean up
 		curs_set(0);
+		free(hex.gc_copy);
+		free(ascii.gc_copy);
+		free(hex.map_copy);
+		// clear any historical changes
+		kh_clear(charmap, app.edmap);		
 		// pass control back to main loop by setting mode back to view
 		app.mode = VIEW_MODE; 
 		v_update_all_windows();
@@ -530,20 +545,19 @@ void end_edit_mode(int k)
 void e_build_grids_from_map_copy()
 {
 	// we want to start with blank grids - every cell = space
-//	memset(hex.gc_copy, ' ', (hex.grid * 3));
-//	memset(ascii.gc_copy, ' ', (hex.grid));
-/*	
+	memset(hex.gc_copy, ' ', (hex.grid * 3));
+	memset(ascii.gc_copy, ' ', (hex.grid));
+	
 	char t_hex[2];
 	for(int i=0; i < (int)hex.map_copy_len; i++){
 		// for the hex map copy, convert byte to ascii
-		byte_to_hex(app.map[hex.v_start + i], t_hex);
+		byte_to_hex(hex.map_copy[i], t_hex);
 		// we only need populat the hex digits as digit 3 is already a space
-		//hex.gc_copy[i * 3] = t_hex[0];
-		//hex.gc_copy[(i * 3) +1] = t_hex[1];		
+		hex.gc_copy[i * 3] = t_hex[0];
+		hex.gc_copy[(i * 3) +1] = t_hex[1];		
 		// for ascii it's a one to one conversion to ascii
-		//ascii.gc_copy[i] = byte_to_ascii(app.map[hex.v_start + i];
+		ascii.gc_copy[i] = byte_to_ascii(hex.map_copy[i]);
 	}
-*/
 }
 
 
@@ -556,20 +570,20 @@ void e_copy_screen()
 //	int max_row;	// this is the max row we can edit if screen > file size
 //	int max_col; 	// this is the max col on the max row we can edit if screen > file size
 //	int max_digit; // this is the max digit on the max row we can edit if screen > file size
-	hex.max_row = hex.map_copy_len / ascii.width; // number of full rows
+	hex.max_row = hex.map_copy_len / hex.digits; // number of full rows
 
-	if((hex.max_row * ascii.width) == hex.map_copy_len) {
+	if((hex.max_row * hex.digits) == hex.map_copy_len) {
 		// we ended up with exactly a full row
-		hex.max_digit = ascii.width;
-		hex.max_col = ascii.width * 3;
+		hex.max_digit = hex.digits;
+		hex.max_col = hex.digits * 3;
 	} else {
 		// we ended up with a partly filled row so can only copy up to there
-		hex.max_digit = hex.map_copy_len - (hex.max_row * ascii.width);
+		hex.max_digit = hex.map_copy_len - (hex.max_row * hex.digits);
 		hex.max_col = hex.max_digit * 3;
 		hex.max_row++; // we can go to next row, but only so far along
 	}
 
-/*	// allocate space and copy from the app.map
+	// allocate space and copy from the app.map
 	hex.map_copy = malloc(hex.map_copy_len + 1);
 	memcpy(hex.map_copy, (app.map + hex.v_start), hex.map_copy_len);
 	hex.map_copy[hex.map_copy_len] = '\0';
@@ -579,7 +593,6 @@ void e_copy_screen()
 	ascii.gc_copy = malloc(hex.grid + 1);
 
 	e_build_grids_from_map_copy();
-*/
 }
 
 
@@ -587,15 +600,15 @@ void e_refresh_hex()
 {
 	box(hex.win, 0, 0);
 	bool chg;
-	int hr=0; // offset print row on grid. 1 avoids the borders
-	int hc=0;
+	int hr=1; // offset print row on grid. 1 avoids the borders
+	int hc=1;
 	int i=0; 
 	int hex_pos=1; // tracks where we are in a hex digit
 	int grid_points = hex.grid * 3;
-	int row_points = ascii.width * 3;
+	int row_points = hex.digits * 3;
 	while(i<grid_points ){
 		// print as much as a row as we can
-		while ((i < grid_points) && (hc < row_points)){
+		while ((i < grid_points) && (hc <= row_points)){
 			// check if there's a change at this point and bold it
 			// we only want to check if the hex_pos is 1, and then it lasts for 3 postions
 
@@ -605,14 +618,14 @@ void e_refresh_hex()
 			}
 			// output the hex with changes in red			
 			if (chg) wattron(hex.win, COLOR_PAIR(1) | A_BOLD);
-			mvwprintw(hex.win, hr, hc, "%c", hex.map[i]);
+			mvwprintw(hex.win, hr, hc, "%c", hex.gc_copy[i]);
 			if (chg) wattroff(hex.win,COLOR_PAIR(1) |  A_BOLD);
 
 			hc++;	// next col (3 cols to a digit)
 			i++;
 			hex_pos++; if(hex_pos > 3) hex_pos = 1; 
 		}
-		hc = 0;
+		hc = 1;
 		hr++;
 	}
 	wnoutrefresh(hex.win);
@@ -620,14 +633,14 @@ void e_refresh_hex()
 
 void e_refresh_ascii()
 {
-	box(ascii.border, 0, 0);
+	box(ascii.win, 0, 0);
 	bool chg;
-	int hr=0; // offset print row on grid. 1 avoids the borders
-	int hc=0;
+	int hr=1; // offset print row on grid. 1 avoids the borders
+	int hc=1;
 	int i=0; 
 	while(i<hex.grid){
 		// print as much as a row as we can
-		while ((i < hex.grid) && (hc < ascii.width)){
+		while ((i < hex.grid) && (hc <= hex.digits)){
 			// check if there's a change at this point and bold it
 			slot = kh_get(charmap, app.edmap, (int64_t)(app.map + hex.v_start + i));
 			if (slot != kh_end(app.edmap)) chg=true; else chg=false;
@@ -637,10 +650,9 @@ void e_refresh_ascii()
 			hc++;
 			i++;
 		}
-		hc = 0;
+		hc = 1;
 		hr++;
 	}
-	wnoutrefresh(ascii.border);
 	wnoutrefresh(ascii.win);
 }
 

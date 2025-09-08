@@ -46,6 +46,11 @@ maxtidy:
 		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*,-misc-include-cleaner' \
 		-- -Wall -Wextra
 
+calls:
+	xcrun clang-tidy edit_mode.c \
+	    -checks='clang-analyzer-debug.CallGraph' \
+	    -- -Wall -Wextra
+
 # Build rules
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LIBS)

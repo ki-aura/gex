@@ -1,0 +1,35 @@
+#!/bin/bash
+exit
+
+# === EDIT THESE ===
+from="hex.rows"
+to="hex.height"
+# ==================
+
+# Files to process (edit extensions or list specific files)
+files=( *.c *.h )   # default to all .z files in current directory
+
+# Check that files exist
+shopt -s nullglob
+if [ ${#files[@]} -eq 0 ]; then
+    echo "No files to process!"
+    exit 1
+fi
+shopt -u nullglob
+
+# Process each file
+for f in "${files[@]}"; do
+    awk -v search="$from" -v replace="$to" '
+    BEGIN { slen = length(search) }
+    {
+        line = $0
+        out = ""
+        pos = 1
+        while ((i = index(substr(line,pos), search)) > 0) {
+            out = out substr(line,pos,i-1) replace
+            pos += i-1 + slen
+        }
+        out = out substr(line,pos)
+        print out
+    }' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+done

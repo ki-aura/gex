@@ -23,7 +23,7 @@ void v_handle_keys(int k)
 		hex.v_start++;
 		break;
 	case KEY_DOWN:
-		hex.v_start += ascii.width;
+		hex.v_start += hex.digits;
 		break;
 	case KEY_NPAGE:
 		hex.v_start += hex.grid;
@@ -37,8 +37,8 @@ void v_handle_keys(int k)
 		break;
 	case KEY_UP:
 	// up one line
-		if(hex.v_start > (unsigned long)ascii.width)
-			hex.v_start -= ascii.width;
+		if(hex.v_start > (unsigned long)hex.digits)
+			hex.v_start -= hex.digits;
 		else
 			hex.v_start = 0;
 		break;
@@ -66,66 +66,68 @@ void v_handle_keys(int k)
 
 void v_populate_grids()
 {
-/*	if (!app.too_small){
+	if (!app.too_small){
+		free(hex.gc);
+		free(ascii.gc);
+		
+		hex.gc = malloc((hex.grid * 3) + 1);
+		ascii.gc = malloc(hex.grid + 1);
+	
+		memset(hex.gc, ' ', (hex.grid * 3));
+		memset(ascii.gc, ' ', (hex.grid));
+		
 		char t_hex[2];
 		for(int i=0; (hex.v_start + i) <= hex.v_end; i++){
 			byte_to_hex(app.map[hex.v_start + i], t_hex);
 			
-			app.map[hex.v_start + (i * 3)] = t_hex[0];
-			app.map[hex.v_start + (i * 3) +1] = t_hex[1];		
+			hex.gc[i * 3] = t_hex[0];
+			hex.gc[(i * 3) +1] = t_hex[1];		
 			
 			ascii.gc[i] = byte_to_ascii(app.map[hex.v_start + i]);
 		}
 	}
-*/
 }
 
 
 void v_refresh_hex()
 {
-		char t_hex[2];
-	box(hex.border, 0, 0);
+	box(hex.win, 0, 0);
 
-	int hr=0; // offset print row on grid. 1 avoids the borders
-	int hc=0;
+	int hr=1; // offset print row on grid. 1 avoids the borders
+	int hc=1;
 	int i=0; 
 	int grid_points = hex.grid * 3;
+	int row_points = hex.digits * 3;
 	while(i<grid_points ){
 		// print as much as a row as we can
-		while ((i < grid_points) && (hc < hex.width)){
-			byte_to_hex(app.map[hex.v_start + i], t_hex);
-			
-			mvwprintw(hex.win, hr, hc, "%c", t_hex[0]);
-			mvwprintw(hex.win, hr, hc+1, "%c", t_hex[1]);
-
-			hc+=3;
+		while ((i < grid_points) && (hc <= row_points)){
+			mvwprintw(hex.win, hr, hc, "%c", hex.gc[i]);
+			hc++;
 			i++;
 		}
-		hc = 0;
+		hc = 1;
 		hr++;
 	}
-	wnoutrefresh(hex.border);
 	wnoutrefresh(hex.win);
 }
 
 void v_refresh_ascii()
 {
-	box(ascii.border, 0, 0);
+	box(ascii.win, 0, 0);
 	
-	int hr=0; // offset print row on grid. 1 avoids the borders
-	int hc=0;
+	int hr=1; // offset print row on grid. 1 avoids the borders
+	int hc=1;
 	int i=0; 
 	while(i<hex.grid){
 		// print as much as a row as we can
-		while ((i < hex.grid) && (hc < ascii.width)){
-			mvwprintw(ascii.win, hr, hc, "%c", byte_to_ascii(app.map[hex.v_start + i]));
+		while ((i < hex.grid) && (hc <= hex.digits)){
+			mvwprintw(ascii.win, hr, hc, "%c", ascii.gc[i]);
 			hc++;
 			i++;
 		}
-		hc = 0;
+		hc = 1;
 		hr++;
 	}
-	wnoutrefresh(ascii.border);
 	wnoutrefresh(ascii.win);
 }
 
@@ -134,10 +136,11 @@ void v_update_all_windows()
 	if (!app.too_small){
 		v_populate_grids();
 	
-		refresh_helper("Options: quit insert edit delete test goto");
 		refresh_status();
+		refresh_helper("Options: quit insert edit delete test goto");
 		v_refresh_hex();
 		v_refresh_ascii();
+	
 		doupdate();
 	}
 }
@@ -149,17 +152,19 @@ void size_windows()
 	app.too_small = false;
 	
 	// Calculate window heights 
-	status.height = 2; 
-	helper.height = 3; 
-	hex.height = app.rows - status.height - helper.height - 6; // 4 for the borders
-	ascii.height = hex.height;					
+	status.height = 4; // 2 lines of text + 2 for the box
+	helper.height = 5; // 3 lines of text + 2 for the box
+	hex.height = app.rows - status.height - helper.height;
+	ascii.height = hex.height;
 	
-	hex.width = ((int)((app.cols-4) / 4) * 3.0); 
-	ascii.width = (int)(hex.width / 3);
-	status.width = hex.width + ascii.width + 2; // 2 for the internal borders of hex & ascii
+	hex.width = ((int)((app.cols-4) / 4) * 3.0) + 2;
+	ascii.width = (int)((hex.width-2) / 3) + 2;
+	status.width = hex.width + ascii.width;
 	helper.width = status.width;
 
-	hex.grid = ascii.width * ascii.height;
+	hex.digits = ascii.width - 2;
+	hex.rows = hex.height -2;
+	hex.grid = hex.digits * hex.rows;
 	
 	// Check for minimum screen size to prevent crashes
 	if (app.rows < (status.height + helper.height + 10) || app.cols < 68) {
@@ -186,23 +191,23 @@ void create_windows()
 		mvprintw(app.rows / 2, (app.cols - 45) / 2, "Screen is too small. Please resize to continue.");
 		refresh(); // refresh becuase i'm writing to main screen
 	} else 	{
-		// Create new windows & borders based on the new dimensions
-		// newwin(num_rows, num_cols, start_row, start_col)
-		status.border = newwin(status.height+2, status.width+2, 0, 0);
-		hex.border = newwin(hex.height+2, hex.width+2, status.height+2, 0);
-		ascii.border = newwin(ascii.height+2, ascii.width+2, status.height+2, hex.width+2);
-		helper.border = newwin(helper.height+2, helper.width+2, status.height+hex.height+4, 0);
-			
-		// Draw borders and content for each window
-		box(status.border, 0, 0);
-		box(hex.border, 0,0);
-		box(ascii.border, 0, 0);
-		box(helper.border, 0, 0);
+		// Create new windows & panels based on the new dimensions
+		status.win = newwin(status.height, status.width, 0, 0);
+		helper.win = newwin(helper.height, helper.width, app.rows - helper.height, 0);
+		hex.win = newwin(hex.height, hex.width, status.height, 0);
+		ascii.win = newwin(ascii.height, ascii.width, status.height, hex.width);
+	
+		status.pan = new_panel(status.win);
+		helper.pan = new_panel(helper.win);
+		hex.pan = new_panel(hex.win);
+		ascii.pan = new_panel(ascii.win);
 		
-		status.win = newwin(status.height, status.width, 1, 1);
-		hex.win = newwin(hex.height, hex.width, status.height+3, 1);
-		ascii.win = newwin(ascii.height, ascii.width, status.height+3,(hex.width+3));
-		helper.win = newwin(helper.height, helper.width, status.height+hex.height+5, 1);
+		// Draw borders and content for each window
+		box(status.win, 0, 0);
+		box(helper.win, 0, 0);
+		box(hex.win, 0,0);
+		box(ascii.win, 0, 0);
+	
 	}
 	
 	// simulate a move so that the changes in the grid size are reflected 
@@ -215,14 +220,26 @@ void create_windows()
 // Function to delete all windows
 void delete_windows() 
 {
-if (status.win != NULL) {delwin(status.win); status.win = NULL; }
-if (helper.win != NULL) {delwin(helper.win); helper.win = NULL; }
-if (hex.win != NULL) {delwin(hex.win); hex.win = NULL; }
-if (ascii.win != NULL) {delwin(ascii.win); ascii.win = NULL; } 
-if (status.border != NULL) {delwin(status.border); status.border = NULL; }
-if (helper.border != NULL) {delwin(helper.border); helper.border = NULL; }
-if (hex.border != NULL) {delwin(hex.border); hex.border = NULL; }
-if (ascii.border != NULL) {delwin(ascii.border); ascii.border = NULL; } 
+	if (status.win != NULL) {
+		del_panel(status.pan);
+		delwin(status.win);
+		status.win = NULL;
+	}
+	if (helper.win != NULL) {
+		del_panel(helper.pan);
+		delwin(helper.win);
+		helper.win = NULL;
+	}
+	if (hex.win != NULL) {
+		del_panel(hex.pan);
+		delwin(hex.win);
+		hex.win = NULL;
+	}
+	if (ascii.win != NULL) {
+		del_panel(ascii.pan);
+		delwin(ascii.win);
+		ascii.win = NULL;
+	}
 }
 
 void v_goto_byte() 

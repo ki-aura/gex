@@ -1,7 +1,7 @@
 #ifndef GEX_EDIT_MODE_H
 #define GEX_EDIT_MODE_H
 
-void init_view_mode();
+void init_edit_mode();
 void end_edit_mode(int k);
 void e_handle_keys(int k);
 void e_handle_full_grid_keys(int k);

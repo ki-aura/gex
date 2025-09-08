@@ -110,18 +110,20 @@ typedef struct {
 
 // Window definitions
 typedef struct {
-	WINDOW *border;
 	WINDOW *win;
-	int height;	// grid height excluding border
-	int width;	// grid width excluding border
-	int grid;	// grid size in total hex / ascii digits (portion of file)
+	PANEL *pan;
+	int height;	// grid height including border
+	int width;	// grid width including border
+	int digits;	// grid width in hex digits (i.e. 3 chars / digit)
+	int rows;	// grid height excluding border
+	int grid;	// grid size in total hex digits (portion of file)
 	// file handling and viewing
 	unsigned long v_start;	// file offset location of start of grid
 	unsigned long v_end;	// file location of end of grid
-//	char *gc;	// viewable grid contents
+	char *gc;	// viewable grid contents
 	// buffers for edit and cursor tracker variables
-//	char *gc_copy;	// copy of viewable grid contents
-//	unsigned char *map_copy; 	// copy of map that relates to the screen
+	char *gc_copy;	// copy of viewable grid contents
+	unsigned char *map_copy; 	// copy of map that relates to the screen
 	int map_copy_len;
 	int max_row;	// this is the max row we can edit if screen > file size
 	int max_col; 	// this is the max col on the max row we can edit if screen > file size
@@ -133,24 +135,29 @@ typedef struct {
 } hex_windef;
 
 typedef struct {
-	WINDOW *border;
 	WINDOW *win;
+	PANEL *pan;
 	int height;
 	int width;
+	char *gc;
+	// don't need digits, grid or v_start/v_end as same as hex
+	// buffers for edit
+	char *gc_copy;
+	// don't need cur_row or cur_col as same as hex.row and hex.digits
 } ascii_windef;
 
 typedef struct {
 	int height;
 	int width;
-	WINDOW *border;
 	WINDOW *win;
+	PANEL *pan;
 } status_windef;
 
 typedef struct {
 	int height;
 	int width;
-	WINDOW *border;
 	WINDOW *win;
+	PANEL *pan;
 } helper_windef;
 
 
@@ -160,10 +167,9 @@ void byte_to_hex(unsigned char b, char *out);
 char byte_to_ascii(unsigned char b);
 int hex_char_to_value(char c);
 unsigned char hex_to_byte(char high, char low);
-// new helpers
-inline unsigned char nib_to_hexval(char c);
-inline unsigned char nibs_to_hex(char hi, char lo);
-inline void hex_to_nibs(unsigned char byte, char *hi, char *lo);
+inline unsigned char char_to_hexval(char c);
+inline unsigned char nib_to_hex(char hi, char lo);
+inline void hex_to_nib(unsigned char byte, char *hi, char *lo);
 
 //void DP(const char *msg);
 
@@ -174,6 +180,7 @@ void final_close(int signum);
 void refresh_helper(char *helpmsg);
 void refresh_status();
 clickwin get_window_click(MEVENT *event, int *row, int *col);
+void zupdate_windows();
 
 
 

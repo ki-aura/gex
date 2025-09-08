@@ -6,14 +6,14 @@
 
 // Global variables
 appdef app = {.mode=VIEW_MODE};
-status_windef status = {.win = NULL, .border = NULL};
-helper_windef helper = {.win = NULL, .border = NULL};
-hex_windef hex = {.win = NULL, .border = NULL};
-ascii_windef ascii = {.win = NULL, .border = NULL};
+status_windef status = {.win = NULL};
+helper_windef helper = {.win = NULL};
+hex_windef hex = {.win = NULL, .gc = NULL};
+ascii_windef ascii = {.win = NULL, .gc = NULL};
 char app_mode_desc[5][10] = {"Edit  ", "Insert", "Delete", "View  ", "Keys  "};
 char *tmp = NULL;
 khiter_t slot;
-int khret; // return value from kh_put calls - says if already exists
+int khret;
 MEVENT event;
 
 ///////////////////////////////////////////////////
@@ -22,18 +22,18 @@ MEVENT event;
 
 // set byte to 0x41 char 'A'   byte= nib_to_hex('4', '1');
 // helper first, main func follows
-inline unsigned char nib_to_hexval(char c) {
+inline unsigned char char_to_hexval(char c) {
 	if (c >= '0' && c <= '9') return c - '0';
 	if (c >= 'A' && c <= 'F') return c - 'A' + 10;
 	if (c >= 'a' && c <= 'f') return c - 'a' + 10;
 	return 0;
 }
-inline unsigned char nibs_to_hex(char hi, char lo) {
-	return (nib_to_hexval(hi) << 4) | nib_to_hexval(lo);
+inline unsigned char nib_to_hex(char hi, char lo) {
+	return (char_to_hexval(hi) << 4) | char_to_hexval(lo);
 }
 
-// deconstruct byte to it's hi and low nibbles: hex_to_nibs(byte, &hi, &lo);
-inline void hex_to_nibs(unsigned char byte, char *hi, char *lo) {
+// deconstruct byte to it's hi and low nibbles: hex_to_nib(byte, &hi, &lo);
+inline void hex_to_nib(unsigned char byte, char *hi, char *lo) {
     *hi = (byte >> 4) & 0xF;
     *lo = byte & 0xF;
 }
@@ -77,12 +77,17 @@ unsigned long  popup_question(const char *qline1, const char *qline2, popup_type
 	char *endptr;
 	unsigned long answer;
 
+int rows, cols;
+getmaxyx(stdscr, rows, cols);  // get terminal size
+
+
+
 	// make sure we size to the longer of the question lines (and at least 21 so a 20byte long can be typed)
 	qlen = (strlen(qline1) > strlen(qline2)) ? strlen(qline1) : strlen(qline2);
 	qlen = (qlen < 21) ? 21 : qlen;
 	// Create window and panel
-	WINDOW *popup = newwin(4, (qlen+2), ((app.rows - 4) / 2), 
-					((app.cols - (qlen+2)) / 2));
+	WINDOW *popup = newwin(4, (qlen+2), ((rows - 4) / 2), 
+					((cols - (qlen+2)) / 2));
 	PANEL  *panel = new_panel(popup);
 	keypad(popup, TRUE); // Enable keyboard input for the window
 	
@@ -134,6 +139,7 @@ unsigned long  popup_question(const char *qline1, const char *qline2, popup_type
 	doupdate();
 	del_panel(panel);
 	delwin(popup);
+	zupdate_windows();
 
 	return answer;
 }
@@ -142,72 +148,6 @@ unsigned long  popup_question(const char *qline1, const char *qline2, popup_type
 // startup and close down
 ///////////////////////////////////////////////////
 
-void initial_setup()
-{
-	// Initialize ncurses & set defaults 
-	initscr();
-	mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED |
-          BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED |
-          BUTTON1_TRIPLE_CLICKED, NULL);
-	start_color();
-	use_default_colors(); 
-	init_pair(1, COLOR_RED, -1);
-	cbreak();		  // Line buffering disabled, Pass on everything
-	noecho();		  // Don't echo input
-	curs_set(2);		
-	keypad(stdscr, true); 	 // Enable function keys (like KEY_RESIZE )
-	set_escdelay(50);	 // speed up recognition of escape key - don't wait 1 sec for possible escape sequence
-
-	// create edit map for edit changes and undos
-	app.edmap = kh_init(charmap);
-
-	// general app defaults
-	app.mode=VIEW_MODE;	
-
-	// set up global variable for debug & popup panel
-	tmp = malloc(256);
-	
-	// Hex window offset to start of file
-	hex.v_start = 0;
-	app.in_hex = true;	// start in hex screen
-	hex.cur_row=0;
-	hex.cur_col=0;
-	hex.cur_digit=0;	// first hex digit (takes 3 spaces)
-	hex.is_lnib = true;	// left nibble of that digit
-	
-	// show cursor
-	curs_set(2);
-	wmove(hex.win, hex.cur_row, hex.cur_col);
-	wrefresh(hex.win);
-
-}
-
-void final_close(int signum)
-{
-	// Clean up ncurses
-	delete_windows();
-	clear();
-	refresh();
-	endwin();
-	
-	// free any globals
-	free(tmp);
-	
-	// close out the hash
-	kh_clear(charmap, app.edmap);
-	kh_destroy(charmap, app.edmap);
-	
-	// user message for forced close
-	if (signum == SIGINT){
-		fputs("Ended by Ctrl+C\n", stderr);
-		exit(EXIT_FAILURE);}
-	if (signum == SIGQUIT){
-		fputs("Ended by Ctrl+\\\n", stderr);
-		exit(EXIT_FAILURE);}
-	if (signum == SIGTERM){
-		fputs("Programme Killed\n", stderr);
-		exit(EXIT_FAILURE);}
-}
 
 ///////////////////////////////////////////////////
 // main logic
@@ -217,16 +157,41 @@ void handle_global_keys(int k)
 {
 	// first check if we're Esc out of any non-view mode or being forced out
 	// due to a screen resize
-	if (k==KEY_RESIZE)
-		create_windows();
-		
-	v_handle_keys(k); 
-	v_update_all_windows();
-	doupdate();
+	if ((k==KEY_ESCAPE) || (k==KEY_RESIZE)) {
+		// exit gracefully from non-view modes
+		switch (app.mode){
+	    	case EDIT_MODE:
+	    		end_edit_mode(k);
+			break;
+		case INSERT_MODE:
+			app.mode=VIEW_MODE;			
+			break;
+		case DELETE_MODE:
+			// call end delete mode routine
+			break;	
+		case VIEW_MODE: 
+			// nothing to do in edit mode
+			break; 
+		}
+		// if we're still in view mode, then edit / delete etc have cancelled 
+		// the Esc so we need to leave screen handling to them
+		if(app.mode == VIEW_MODE) {
+			if (k==KEY_RESIZE) create_windows();
+			v_update_all_windows();
+			doupdate();
+		}
+	}
 	
-/*		switch(k){
+	switch(app.mode){
+	case VIEW_MODE:
+		// check if we've initiated a new mode
+		switch(k){
 		// special keys to change mode
-		case KEY_F2: 
+		case 'e': 
+			app.mode=EDIT_MODE; 
+			init_edit_mode();
+			break;
+		case 'i': 
 			app.mode=INSERT_MODE; 
 			// TEST!!
 //			create_view_menu(status.win);
@@ -247,29 +212,40 @@ void handle_global_keys(int k)
 			v_update_all_windows();
 			doupdate();
 			break;
-		}	*/
+		}	
+		break;
+		
+    	case EDIT_MODE:
+		e_handle_keys(k);
+		break;
+
+    	case INSERT_MODE:
+	
+		break;
+    	case DELETE_MODE:
+	
+		break;
+	}	
 }
 
 void refresh_status()
 {
-	box(status.border, 0, 0);
-	mvwprintw(status.win, 0, 0, "Mode %s Fsize %lu offset %lu to %lu       ", app_mode_desc[app.mode], 
+	box(status.win, 0, 0);
+	mvwprintw(status.win, 1, 1, "Mode %s Fsize %lu offset %lu to %lu       ", app_mode_desc[app.mode], 
 					app.fsize, hex.v_start, hex.v_end);
-	mvwprintw(status.win, 1, 0, "Screen: %d rows, %d cols, grid %dx%d=%d", app.rows, app.cols, 
+	mvwprintw(status.win, 2, 1, "Screen: %d rows, %d cols, grid %dx%d=%d", app.rows, app.cols, 
 					ascii.width, hex.height, hex.grid);
-	wnoutrefresh(status.border);
 	wnoutrefresh(status.win);
 }
 
 void refresh_helper(char *helpmsg)
 {
-	box(helper.border, 0, 0);
-	char *help_line = malloc(helper.width + 1 ); // +1 for null
-	memset(help_line, ' ', helper.width);
-	help_line[helper.width]='\0';
-	mvwprintw(helper.win, 0, 0, "%s", help_line);   // blank it out
-	mvwprintw(helper.win, 0, 0, "%s", helpmsg);     // and fill it new
-	wnoutrefresh(helper.border);
+	box(helper.win, 0, 0);
+	char *help_line = malloc(helper.width -1 ); // -2 to exclude borders, +1 for null
+	memset(help_line, ' ', helper.width - 2);
+	help_line[helper.width - 2]='\0';
+	mvwprintw(helper.win, 1, 1, "%s", help_line);   // blank it out
+	mvwprintw(helper.win, 1, 1, "%s", helpmsg);     // and fill it new
 	wnoutrefresh(helper.win);
 	free(help_line);
 }
@@ -277,31 +253,31 @@ void refresh_helper(char *helpmsg)
 
 clickwin get_window_click(MEVENT *event, int *row, int *col) 
 {
-    int win_rs, win_cs, win_re, win_ce; // rs row start, rs row end, ...
+    int win_y, win_x, win_rows, win_cols;
 	
 	// get mouse row (y) and col (x)
-    int mr = event->y;
-    int mc = event->x;
+    int y = event->y;
+    int x = event->x;
 
     // Check hex window
-    getbegyx(hex.win, win_rs, win_cs); // row and col start
-    getmaxyx(hex.win, win_re, win_ce); // row and col end
+    getbegyx(hex.win, win_y, win_x);
+    getmaxyx(hex.win, win_rows, win_cols);
 
-    if (mr >= win_rs && mr < win_rs + win_re &&
-        mc >= win_cs && mc < win_cs + win_ce) { 
-        *row = mr - win_rs;			
-        *col = mc - win_cs;
+    if (y >= win_y + 1 && y < win_y + win_rows - 1 &&
+        x >= win_x + 1 && x < win_x + win_cols - 1) { 
+        *row = y - (win_y);			
+        *col = x - (win_x);
         return WIN_HEX;
     }
 
     // Check ascii window
-    getbegyx(ascii.win, win_rs, win_cs); // row and col start
-    getmaxyx(ascii.win, win_re, win_ce); // row and col end
+    getbegyx(ascii.win, win_y, win_x);
+    getmaxyx(ascii.win, win_rows, win_cols);
 
-    if (mr >= win_rs && mr < win_rs + win_re &&
-        mc >= win_cs && mc < win_cs + win_ce) { 
-        *row = mr - win_rs;			
-        *col = mc - win_cs;
+    if (y >= win_y + 1 && y < win_y + win_rows - 1 &&
+        x >= win_x + 1 && x < win_x + win_cols - 1) {
+        *row = y - (win_y);
+        *col = x - (win_x);
         return WIN_ASCII;
     }
 
@@ -310,58 +286,72 @@ clickwin get_window_click(MEVENT *event, int *row, int *col)
     return WIN_OTHER;
 }
 
+
+WINDOW *hbord, *hwin, *abord, *awin;
+
+void zupdate_windows() {
+	int r, c;
+	for(r=0; r<20; r++) 
+		for(c=0; c<60; c+=3) 
+			mvwprintw(hwin, r, c, "hl ");
+
+	for(r=0; r<20; r++) 
+		for(c=0; c<20; c++) 
+			mvwprintw(awin, r, c, "a");
+
+	box(hbord,0,0); box(abord,0,0); 
+	wrefresh(hbord);
+	wrefresh(hwin);
+	wrefresh(abord);
+	wrefresh(awin);
+}
+
+void zcreate_windows() {
+	delete_windows();
+	clear();
+	refresh();
+	
+	// newwin(height, width, start row, start col)
+	hbord = newwin(22,62,0,0); 
+	hwin = newwin(20,60, 1,1);
+	abord = newwin(22,22,0,62+1); 
+	awin = newwin(20,20,1,62+2);
+	
+	zupdate_windows();	
+}
+
 int main(int argc, char *argv[]) 
 {
-signal(SIGINT, final_close);
-signal(SIGQUIT, final_close);
-signal(SIGTERM, final_close);
+// initalise stuff
+initscr();
+mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED |
+	  BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED |
+	  BUTTON1_TRIPLE_CLICKED, NULL);
+start_color();
+use_default_colors(); 
+init_pair(1, COLOR_RED, -1);
+cbreak();		  // Line buffering disabled, Pass on everything
+noecho();		  // Don't echo input
+curs_set(0);		
+keypad(stdscr, true); 	 // Enable function keys (like KEY_RESIZE )
+set_escdelay(50);	 // speed up recognition of escape key - don't wait 1 sec for possible escape sequence
+tmp = malloc(256);
 
-	// Initial app setup
-	initial_setup();
-
-	// open file
-	if (open_file(argc, argv)) {
-		// and go....
-		init_view_mode();
-		create_windows();
+		zcreate_windows();
 		int ch = KEY_HELP; // doesn't trigger anything
 		// Main loop to handle input
-		while (	(app.mode != VIEW_MODE) ||
-			((app.mode == VIEW_MODE) && (ch != KEY_ESCAPE))) {
-
+		while (ch != 'q') {
 			ch = getch();
-			switch(ch){
-			case KEY_MOUSE: // only handle in Edit mode
-				if ((getmouse(&event) == OK)) {
-				// Treat any of these as a "logical click"
-					const mmask_t CLICKY = BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | 
-								BUTTON1_TRIPLE_CLICKED | BUTTON1_PRESSED;
-					if (event.bstate & CLICKY) {
-						int row, col;
-						clickwin win = get_window_click(&event, &row, &col); // relative coords, or 'n'
-						e_handle_click(win, row, col);
-					}
-				}
-				break;
-
-			case KEY_RESIZE:
-				create_windows();
-				e_handle_keys(ch); // force an update
-				v_update_all_windows();
-				doupdate();
-			break;
-			
-			default:
-				//if (!app.too_small) handle_global_keys(ch);
-			break;			
-			}
+			if(ch == 'p') popup_question("click                       ", "", PTYPE_CONTINUE);
+			if(ch == KEY_RESIZE) zupdate_windows();
 		}
-		// no longer need the file open
-		close_file();
-	} 
-	
-	// tidy up
-	final_close(0);		
-	return 0;
+		
+// tidy up
+delete_windows();
+clear();
+refresh();
+endwin();
+free(tmp);
+return 0;
 }
 
