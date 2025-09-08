@@ -587,6 +587,8 @@ void e_refresh_hex()
 {
 	box(hex.win, 0, 0);
 	bool chg;
+			char t_hex[2];
+
 	int hr=0; // offset print row on grid. 1 avoids the borders
 	int hc=0;
 	int i=0; 
@@ -605,7 +607,13 @@ void e_refresh_hex()
 			}
 			// output the hex with changes in red			
 			if (chg) wattron(hex.win, COLOR_PAIR(1) | A_BOLD);
-			mvwprintw(hex.win, hr, hc, "%c", hex.map[i]);
+			
+/*			byte_to_hex(app.map[hex.v_start + i], t_hex);			
+			mvwprintw(hex.win, hr, hc, "%c", t_hex[0]);
+			mvwprintw(hex.win, hr, hc+1, "%c", t_hex[1]);
+
+*/
+//			mvwprintw(hex.win, hr, hc, "%c", hex.map[i]);
 			if (chg) wattroff(hex.win,COLOR_PAIR(1) |  A_BOLD);
 
 			hc++;	// next col (3 cols to a digit)
@@ -621,7 +629,8 @@ void e_refresh_hex()
 void e_refresh_ascii()
 {
 	box(ascii.border, 0, 0);
-	bool chg;
+			char t_hex[2];
+bool chg;
 	int hr=0; // offset print row on grid. 1 avoids the borders
 	int hc=0;
 	int i=0; 
@@ -631,8 +640,8 @@ void e_refresh_ascii()
 			// check if there's a change at this point and bold it
 			slot = kh_get(charmap, app.edmap, (int64_t)(app.map + hex.v_start + i));
 			if (slot != kh_end(app.edmap)) chg=true; else chg=false;
-			if (chg) wattron(ascii.win, COLOR_PAIR(1) | A_BOLD);
-			mvwprintw(ascii.win, hr, hc, "%c", ascii.gc_copy[i]);
+			if (chg) wattron(ascii.win, COLOR_PAIR(1) | A_BOLD);			
+//			mvwprintw(ascii.win, hr, hc, "%c", ascii.gc_copy[i]);
 			if (chg) wattroff(ascii.win, COLOR_PAIR(1) | A_BOLD);
 			hc++;
 			i++;
@@ -652,7 +661,7 @@ void e_save_changes(){
 			"This action can not be undone (y/n)", PTYPE_YN)){
 		// save changes 
 		// replace app.map segment with update changes & msync
-		memcpy((app.map + hex.v_start), hex.map_copy, hex.map_copy_len);
+	//	memcpy((app.map + hex.v_start), hex.map_copy, hex.map_copy_len);
 		
 		// and sync it out
 		msync(app.map, app.fsize, MS_SYNC);

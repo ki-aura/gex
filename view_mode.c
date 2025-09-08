@@ -93,8 +93,7 @@ void v_refresh_hex()
 	while(i<grid_points ){
 		// print as much as a row as we can
 		while ((i < grid_points) && (hc < hex.width)){
-			byte_to_hex(app.map[hex.v_start + i], t_hex);
-			
+			byte_to_hex(app.map[hex.v_start + i], t_hex);			
 			mvwprintw(hex.win, hr, hc, "%c", t_hex[0]);
 			mvwprintw(hex.win, hr, hc+1, "%c", t_hex[1]);
 
@@ -150,10 +149,11 @@ void size_windows()
 	
 	// Calculate window heights 
 	status.height = 2; 
-	helper.height = 3; 
+	helper.height = 2; 
 	hex.height = app.rows - status.height - helper.height - 6; // 4 for the borders
 	ascii.height = hex.height;					
 	
+	// calculate window widths
 	hex.width = ((int)((app.cols-4) / 4) * 3.0); 
 	ascii.width = (int)(hex.width / 3);
 	status.width = hex.width + ascii.width + 2; // 2 for the internal borders of hex & ascii

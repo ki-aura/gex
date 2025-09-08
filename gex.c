@@ -16,26 +16,54 @@ khiter_t slot;
 int khret; // return value from kh_put calls - says if already exists
 MEVENT event;
 
-///////////////////////////////////////////////////
-// New helper functions
-///////////////////////////////////////////////////
+// IMPORTANT NOTE
+// nibbles are printable chars 0123456789ABCDEF
+// bytes are unsigned chars - they come from a file
 
-// set byte to 0x41 char 'A'   byte= nib_to_hex('4', '1');
-// helper first, main func follows
-inline unsigned char nib_to_hexval(char c) {
+// helper function for byte_to_nibs only
+unsigned char HELPER_hexnib_to_char(unsigned char hex_nibble) {
+    if (hex_nibble < 10) return hex_nibble + '0';
+    else return hex_nibble - 10 + 'A';
+}
+// helper function for bit to byte functions only 
+int HELPER_nib_to_hexval(const char c) {
 	if (c >= '0' && c <= '9') return c - '0';
 	if (c >= 'A' && c <= 'F') return c - 'A' + 10;
 	if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-	return 0;
-}
-inline unsigned char nibs_to_hex(char hi, char lo) {
-	return (nib_to_hexval(hi) << 4) | nib_to_hexval(lo);
+	assert(0 && "invalid hex digit found");
+	return -1; // error
 }
 
-// deconstruct byte to it's hi and low nibbles: hex_to_nibs(byte, &hi, &lo);
-inline void hex_to_nibs(unsigned char byte, char *hi, char *lo) {
-    *hi = (byte >> 4) & 0xF;
-    *lo = byte & 0xF;
+// MAIN FUNCTIONS HEX & ASCII CONVERSION FUNCTION //
+
+// convert nibbles to a byte. e.g. set byte to 0x41 (char 'A'): byte= nibs_to_byte('4', '1');
+unsigned char nibs_to_byte(const char hi, const char lo) {
+	return (unsigned char)((HELPER_nib_to_hexval(hi) << 4) |HELPER_nib_to_hexval(lo));
+}
+// takes a binary file byte and updates the hi nibble
+void apply_hinib_to_byte(unsigned char *byte, const char hi) {
+	// set hi nibble to zero
+	*byte = *byte & 0x0F; 	// byte[0] = byte[0] & 0x0F;
+	// apply hi nibble
+	*byte = ((*byte) | (HELPER_nib_to_hexval(hi) << 4));
+}
+// takes a binary file byte and updates the low nibble
+void apply_lonib_to_byte(unsigned char *byte, const char lo) {
+	// set hi nibble to zero
+	*byte = *byte & 0xF0;
+	// set lo nibble to passed in nibble	
+	*byte = ((*byte) | (HELPER_nib_to_hexval(lo)));
+}
+
+// deconstruct byte to it's hi and low displayable nibbles: hex_to_nibs(byte, &hi, &lo);
+void byte_to_nibs(const unsigned char byte, char *hi, char *lo) {
+    *hi = HELPER_hexnib_to_char((byte >> 4) & 0xF);
+    *lo = HELPER_hexnib_to_char(byte & 0xF);
+}
+
+char byte_to_ascii(unsigned char b) 
+{
+    return (isprint(b) ? (char)b : '.');
 }
 
 ///////////////////////////////////////////////////
@@ -50,10 +78,6 @@ void byte_to_hex(unsigned char b, char *out)
     // out[2] is NOT null-terminated — just 2 chars
 }
 
-char byte_to_ascii(unsigned char b) 
-{
-    return (isprint(b) ? (char)b : '.');
-}
 
 int hex_char_to_value(char c) 
 {
