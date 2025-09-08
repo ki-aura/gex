@@ -1,7 +1,7 @@
 #ifndef GEX_VIEW_MODE_H
 #define GEX_VIEW_MODE_H
 
-void v_handle_keys(int k);
+void vv_handle_keys(int k);
 void v_populate_grids();
 void v_refresh_ascii();
 void v_refresh_hex();

@@ -38,13 +38,6 @@ typedef enum {
 } popup_types;
 
 typedef enum {
-    EDIT_MODE, 
-    INSERT_MODE,
-    DELETE_MODE,
-    VIEW_MODE, 
-} app_mode;
-
-typedef enum {
 	WIN_HEX,
 	WIN_ASCII,
 	WIN_OTHER,
@@ -97,7 +90,7 @@ typedef struct {
 	bool too_small; 	// less than 2 hex rows and 16 hex chars wide
 	// general 
 	bool in_hex;		// track which pane we're in during edit
-	app_mode mode;		// view, edit etc
+//	app_mode mode;		// view, edit etc
 	// file & mem handling
 	size_t fsize;		// file size
 	char *fname;		// file name
@@ -119,10 +112,7 @@ typedef struct {
 	// file handling and viewing
 	unsigned long v_start;	// file offset location of start of grid
 	unsigned long v_end;	// file location of end of grid
-//	char *gc;	// viewable grid contents
-	// buffers for edit and cursor tracker variables
-//	char *gc_copy;	// copy of viewable grid contents
-//	unsigned char *map_copy; 	// copy of map that relates to the screen
+
 	int map_copy_len;
 	int max_row;	// this is the max row we can edit if screen > file size
 	int max_col; 	// this is the max col on the max row we can edit if screen > file size
@@ -130,7 +120,7 @@ typedef struct {
 	int cur_row;	// cursor location (i.e. where to show it rather than where it is)
 	int cur_col;
 	int cur_digit;	// which hex digit (hinib lownib space) the cursor is on
-	bool is_lnib;	// are we on the left nibble (hi nibble)
+	bool is_hinib;	// are we on the hi (left) nibble
 } hex_windef;
 
 typedef struct {
@@ -152,27 +142,14 @@ typedef struct {
 	int width;
 	WINDOW *border;
 	WINDOW *win;
+	char *helpmsg;
 } helper_windef;
 
 
-// helper functions
-unsigned long popup_question(const char *qline1, const char *qline2, popup_types pt);
-void byte_to_hex(unsigned char b, char *out);
-char byte_to_ascii(unsigned char b);
-int hex_char_to_value(char c);
-unsigned char hex_to_byte(char high, char low);
-// new helpers
-inline unsigned char nib_to_hexval(char c);
-inline unsigned char nibs_to_hex(char hi, char lo);
-inline void hex_to_nibs(unsigned char byte, char *hi, char *lo);
-
-//void DP(const char *msg);
-
-// main loop
 void handle_global_keys(int k);
 void initial_setup();
 void final_close(int signum);
-void refresh_helper(char *helpmsg);
+void refresh_helper();
 void refresh_status();
 clickwin get_window_click(MEVENT *event, int *row, int *col);
 
@@ -183,12 +160,14 @@ extern status_windef status;
 extern helper_windef helper;
 extern hex_windef hex;
 extern ascii_windef ascii;
-extern char app_mode_desc[][10];
 extern char *tmp;// makes debug panel usage easier
 extern khiter_t slot; // general hash usage
 extern int khret;
 extern MEVENT event;
 
 // snprintf(tmp, 200, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
+
+// this needs to be last as it relies on the typedefs above
+#include "gex_helper_funcs.h"
 
 #endif

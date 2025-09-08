@@ -1,9 +1,10 @@
 #!/bin/bash
 exit
+echo running
 
 # === EDIT THESE ===
-from="hex.rows"
-to="hex.height"
+from="is_lnib"
+to="is_hinib"
 # ==================
 
 # Files to process (edit extensions or list specific files)

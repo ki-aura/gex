@@ -6,44 +6,43 @@
 void e_handle_click(clickwin win, int row, int col)
 {
 	// if we clicked outside hex or ascii windows then don't care
-	if(win == WIN_OTHER) return;//snprintf(tmp,200,"col %d digit %d row %d HiNib %d",hex.cur_col, hex.cur_digit, row, (int)hex.is_lnib); popup_question(tmp, "", PTYPE_CONTINUE);
-	
+	if(win == WIN_OTHER) return;
+
 	// handle_full_grid_clicks 		
 	if(win == WIN_HEX) {
 		// this so far only handles full panes
-		if(!app.in_hex) app.in_hex = true;
+		app.in_hex = true;
 		hex.cur_row = row;
-		hex.cur_digit = (col + 2)/3;
+		hex.cur_digit = col/3;
 		hex.cur_col = col; 
 		// move back 1 if we clicked on a space in the grid
 		if((hex.cur_col%3)==2)hex.cur_col--;
 		// work out which nibble we're on
-		if((hex.cur_col%3)==0)hex.is_lnib=true; else hex.is_lnib=false;
-
+		if((hex.cur_col%3)==0)hex.is_hinib=true; else hex.is_hinib=false;
 	}
 	
 	if(win == WIN_ASCII){
 		// this so far only handles full panes
-		if(app.in_hex) app.in_hex = false;
+		app.in_hex = false;
 		hex.cur_row = row;
 		hex.cur_digit = col;
 		hex.cur_col = (col *3);		
-		hex.is_lnib=true;
-		// ascii boundary checks needed for and partially filled window
+		hex.is_hinib=true;
+//snprintf(tmp,200,"(A) col %d digit %d row %d HiNib %d",hex.cur_col, hex.cur_digit, row, (int)hex.is_hinib); popup_question(tmp, "", PTYPE_CONTINUE);
 	}
 
-		// boundary checks needed for and partially filled window
-		if(hex.map_copy_len != hex.grid) {
-			// if we clicked above the max row set to max row
-			if(hex.cur_row > hex.max_row) hex.cur_row = hex.max_row;
-			// if we are on max_row and further over than max col, set to max col
-			if ((hex.cur_row == hex.max_row) && (hex.cur_col > hex.max_col)) {
-				hex.cur_col = hex.max_col-1;
-				hex.cur_digit = (hex.max_col+2)/3;
-				}
-		} 
-
-	e_handle_keys(KEY_HELP); // a key that will drop through to the display updates
+/*	// boundary checks needed for and partially filled window
+	if(hex.map_copy_len != hex.grid) {
+		// if we clicked above the max row set to max row
+		if(hex.cur_row > hex.max_row) hex.cur_row = hex.max_row;
+		// if we are on max_row and further over than max col, set to max col
+		if ((hex.cur_row == hex.max_row) && (hex.cur_col > hex.max_col)) {
+			hex.cur_col = hex.max_col-1;
+			hex.cur_digit = (hex.max_col+2)/3;
+			}
+	} 
+*/
+	//e_handle_keys(KEY_HELP); // a key that will drop through to the display updates
 	return;
 
 }
@@ -57,11 +56,11 @@ void e_handle_partial_grid_keys(int k)
 		if(hex.cur_row < hex.max_row) {
 			hex.cur_col = (ascii.width*3) - 2; // l nibble of last digit
 			hex.cur_digit = ascii.width;	// first hex digit (takes 3 spaces)
-			hex.is_lnib = true;	// left nibble of that digit
+			hex.is_hinib = true;	// left nibble of that digit
 		} else {
 			hex.cur_col = hex.max_col -2; // l nibble of last digit
 			hex.cur_digit = hex.max_digit;	// first hex digit (takes 3 spaces)
-			hex.is_lnib = true;	// left nibble of that digit
+			hex.is_hinib = true;	// left nibble of that digit
 		}
 		break;
 
@@ -70,21 +69,21 @@ void e_handle_partial_grid_keys(int k)
 	if(hex.cur_row < hex.max_row) {
 	// we're on a normal row.
 		if(app.in_hex){
-			if (!hex.is_lnib){
+			if (!hex.is_hinib){
 				// we can safely move to left nib. don't move ascii cursor
 				hex.cur_col--;
-				hex.is_lnib=true;
+				hex.is_hinib=true;
 			} else {
 				// we're on lef nib. move back 2 unless at start of row, 
 				// otherwise wrap back to end of row
 				if(hex.cur_digit > 1){
 					hex.cur_col-=2;
 					hex.cur_digit--;
-					hex.is_lnib=false;
+					hex.is_hinib=false;
 				} else {
 					hex.cur_col=(ascii.width*3) - 1; //1 this time as go to right nibble
 					hex.cur_digit=ascii.width;	// first hex digit (takes 3 spaces)
-					hex.is_lnib = false;	// left nibble of that digit
+					hex.is_hinib = false;	// left nibble of that digit
 				}
 			}
 		
@@ -92,31 +91,31 @@ void e_handle_partial_grid_keys(int k)
 			if(hex.cur_digit > 1){
 				hex.cur_col-=3;
 				hex.cur_digit--;
-				hex.is_lnib = true;
+				hex.is_hinib = true;
 			} else { // wrap col
 					hex.cur_col=(ascii.width*3) - 2;
 					hex.cur_digit=ascii.width;	// last hex digit (takes 3 spaces)
-					hex.is_lnib = true;	// left nibble of that digit
+					hex.is_hinib = true;	// left nibble of that digit
 			}
 		}
 	} else {
 	// we're on a short row
 		if(app.in_hex){
-			if (!hex.is_lnib){
+			if (!hex.is_hinib){
 				// we can safely move to left nib. don't move ascii cursor
 				hex.cur_col--;
-				hex.is_lnib=true;
+				hex.is_hinib=true;
 			} else {
 				// we're on lef nib. move back 2 unless at start of row, 
 				// otherwise wrap back to end of row
 				if(hex.cur_digit > 1){
 					hex.cur_col-=2;
 					hex.cur_digit--;
-					hex.is_lnib=false;
+					hex.is_hinib=false;
 				} else {
 					hex.cur_col = hex.max_col -1;  //1 this time as go to right nibble
 					hex.cur_digit = hex.max_digit;	// first hex digit (takes 3 spaces)
-					hex.is_lnib = false;	// left nibble of that digit
+					hex.is_hinib = false;	// left nibble of that digit
 				}
 			}
 		
@@ -124,11 +123,11 @@ void e_handle_partial_grid_keys(int k)
 			if(hex.cur_digit > 1){
 				hex.cur_col-=3;
 				hex.cur_digit--;
-				hex.is_lnib = true;
+				hex.is_hinib = true;
 			} else { // wrap col
 					hex.cur_col = (ascii.width*3) - 2; 
 					hex.cur_digit = hex.max_digit;	// last hex digit (takes 3 spaces)
-					hex.is_lnib = true;	// left nibble of that digit
+					hex.is_hinib = true;	// left nibble of that digit
 			}
 		}
 	
@@ -139,62 +138,62 @@ void e_handle_partial_grid_keys(int k)
 		// 1 ascii.width = lnib rnib space
 	if(hex.cur_row < hex.max_row) {
 		if(app.in_hex){
-			if (hex.is_lnib){
+			if (hex.is_hinib){
 				// we can safely move to right nib. don't move ascii cursor
 				hex.cur_col++;
-				hex.is_lnib=false;
+				hex.is_hinib=false;
 			} else {
 				// we're on right nib. move 2 unless at end of row, 
 				// otherwise wrap back to start of row
 				if(hex.cur_digit < ascii.width){
 					hex.cur_col+=2;
 					hex.cur_digit++;
-					hex.is_lnib=true;
+					hex.is_hinib=true;
 				} else {
 					hex.cur_col=1;
 					hex.cur_digit=1;	// first hex digit (takes 3 spaces)
-					hex.is_lnib = true;	// left nibble of that digit
+					hex.is_hinib = true;	// left nibble of that digit
 				}
 			}		
 		} else { // we're in ascii pane
 			if(hex.cur_digit < ascii.width){
 				hex.cur_col+=3;
 				hex.cur_digit++;
-				hex.is_lnib = true;
+				hex.is_hinib = true;
 			} else { // wrap col
 					hex.cur_col=1;
 					hex.cur_digit=1;	// first hex digit (takes 3 spaces)
-					hex.is_lnib = true;	// left nibble of that digit
+					hex.is_hinib = true;	// left nibble of that digit
 			}
 		}
 	} else {
 		if(app.in_hex){
-			if (hex.is_lnib){
+			if (hex.is_hinib){
 				// we can safely move to right nib. don't move ascii cursor
 				hex.cur_col++;
-				hex.is_lnib=false;
+				hex.is_hinib=false;
 			} else {
 				// we're on right nib. move 2 unless at end of row, 
 				// otherwise wrap back to start of row
 				if(hex.cur_digit < hex.max_digit){
 					hex.cur_col+=2;
 					hex.cur_digit++;
-					hex.is_lnib=true;
+					hex.is_hinib=true;
 				} else {
 					hex.cur_col=1;
 					hex.cur_digit=1;	// first hex digit (takes 3 spaces)
-					hex.is_lnib = true;	// left nibble of that digit
+					hex.is_hinib = true;	// left nibble of that digit
 				}
 			}		
 		} else { // we're in ascii pane
 			if(hex.cur_digit < hex.max_digit){
 				hex.cur_col+=3;
 				hex.cur_digit++;
-				hex.is_lnib = true;
+				hex.is_hinib = true;
 			} else { // wrap col
 					hex.cur_col=1;
 					hex.cur_digit=1;	// first hex digit (takes 3 spaces)
-					hex.is_lnib = true;	// left nibble of that digit
+					hex.is_hinib = true;	// left nibble of that digit
 			}
 		}
 	
@@ -246,28 +245,28 @@ void e_handle_full_grid_keys(int k)
 		// move end of current row
 		hex.cur_col = (ascii.width*3) - 2; // l nibble of last digit
 		hex.cur_digit = ascii.width;	// first hex digit (takes 3 spaces)
-		hex.is_lnib = true;	// left nibble of that digit
+		hex.is_hinib = true;	// left nibble of that digit
 		break;
 
 	case KEY_LEFT:
 		// 1 ascii.width = lnib rnib space
 		// boundary is 1 to hex.width -1
 		if(app.in_hex){
-			if (!hex.is_lnib){
+			if (!hex.is_hinib){
 				// we can safely move to left nib. don't move ascii cursor
 				hex.cur_col--;
-				hex.is_lnib=true;
+				hex.is_hinib=true;
 			} else {
 				// we're on lef nib. move back 2 unless at start of row, 
 				// otherwise wrap back to end of row
 				if(hex.cur_digit > 1){
 					hex.cur_col-=2;
 					hex.cur_digit--;
-					hex.is_lnib=false;
+					hex.is_hinib=false;
 				} else {
 					hex.cur_col=(ascii.width*3) - 1; //1 this time as go to right nibble
 					hex.cur_digit=ascii.width;	// first hex digit (takes 3 spaces)
-					hex.is_lnib = false;	// left nibble of that digit
+					hex.is_hinib = false;	// left nibble of that digit
 				}
 			}
 		
@@ -275,11 +274,11 @@ void e_handle_full_grid_keys(int k)
 			if(hex.cur_digit > 1){
 				hex.cur_col-=3;
 				hex.cur_digit--;
-				hex.is_lnib = true;
+				hex.is_hinib = true;
 			} else { // wrap col
 					hex.cur_col=(ascii.width*3) - 2;
 					hex.cur_digit=ascii.width;	// last hex digit (takes 3 spaces)
-					hex.is_lnib = true;	// left nibble of that digit
+					hex.is_hinib = true;	// left nibble of that digit
 			}
 		}
 
@@ -289,32 +288,32 @@ void e_handle_full_grid_keys(int k)
 		// 1 ascii.width = lnib rnib space
 		// boundary is 1 to hex.width -1
 		if(app.in_hex){
-			if (hex.is_lnib){
+			if (hex.is_hinib){
 				// we can safely move to right nib. don't move ascii cursor
 				hex.cur_col++;
-				hex.is_lnib=false;
+				hex.is_hinib=false;
 			} else {
 				// we're on right nib. move 2 unless at end of row, 
 				// otherwise wrap back to start of row
 				if(hex.cur_digit < ascii.width){
 					hex.cur_col+=2;
 					hex.cur_digit++;
-					hex.is_lnib=true;
+					hex.is_hinib=true;
 				} else {
 					hex.cur_col=1;
 					hex.cur_digit=1;	// first hex digit (takes 3 spaces)
-					hex.is_lnib = true;	// left nibble of that digit
+					hex.is_hinib = true;	// left nibble of that digit
 				}
 			}		
 		} else { // we're in ascii pane
 			if(hex.cur_digit < ascii.width){
 				hex.cur_col+=3;
 				hex.cur_digit++;
-				hex.is_lnib = true;
+				hex.is_hinib = true;
 			} else { // wrap col
 					hex.cur_col=1;
 					hex.cur_digit=1;	// first hex digit (takes 3 spaces)
-					hex.is_lnib = true;	// left nibble of that digit
+					hex.is_hinib = true;	// left nibble of that digit
 			}
 		}
 		break;
@@ -352,7 +351,7 @@ bool undo = false;
 	// move start of current row
 		hex.cur_col=1;
 		hex.cur_digit=1;	// first hex digit (takes 3 spaces)
-		hex.is_lnib = true;	// left nibble of that digit
+		hex.is_hinib = true;	// left nibble of that digit
 		;break;
 
 	case KEY_PPAGE:
@@ -361,9 +360,9 @@ bool undo = false;
 
 	case KEY_TAB:
 	//ensure on left nib on ascii pane return
-		if(!hex.is_lnib){
+		if(!hex.is_hinib){
 			hex.cur_col--;
-			hex.is_lnib=true;
+			hex.is_hinib=true;
 		}
 		// flip panes
 		app.in_hex = !app.in_hex;
@@ -438,7 +437,7 @@ bool undo = false;
 					nibble = (k >= '0' && k <= '9') ? (k - '0') :
 						       (k >= 'a') ? (k - 'a' + 10) : (k - 'A' + 10);
 	
-					if (hex.is_lnib) {
+					if (hex.is_hinib) {
 						// push the change onto the edit map
 						slot = kh_put(charmap, app.edmap, (int64_t)(app.map + hex.v_start + idx), &khret);
 						//if(khret) kh_val(app.edmap, slot).old_ch = (unsigned char)hex.map_copy[idx];
@@ -497,7 +496,7 @@ void init_view_mode()
 	hex.cur_row=0;
 	hex.cur_col=0;
 	hex.cur_digit=0;	// first hex digit (takes 3 spaces)
-	hex.is_lnib = true;	// left nibble of that digit
+	hex.is_hinib = true;	// left nibble of that digit
 	
 	// show cursor
 	curs_set(2);
@@ -522,7 +521,6 @@ void end_edit_mode(int k)
 		// clean up
 		curs_set(0);
 		// pass control back to main loop by setting mode back to view
-		app.mode = VIEW_MODE; 
 		v_update_all_windows();
 	}	
 }

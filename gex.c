@@ -3,164 +3,16 @@
 #include "view_mode.h"
 #include "edit_mode.h"
 
-
 // Global variables
-appdef app = {.mode=VIEW_MODE};
 status_windef status = {.win = NULL, .border = NULL};
 helper_windef helper = {.win = NULL, .border = NULL};
 hex_windef hex = {.win = NULL, .border = NULL};
 ascii_windef ascii = {.win = NULL, .border = NULL};
-char app_mode_desc[5][10] = {"Edit  ", "Insert", "Delete", "View  ", "Keys  "};
-char *tmp = NULL;
+appdef app;
 khiter_t slot;
 int khret; // return value from kh_put calls - says if already exists
 MEVENT event;
-
-// IMPORTANT NOTE
-// nibbles are printable chars 0123456789ABCDEF
-// bytes are unsigned chars - they come from a file
-
-// helper function for byte_to_nibs only
-unsigned char HELPER_hexnib_to_char(unsigned char hex_nibble) {
-    if (hex_nibble < 10) return hex_nibble + '0';
-    else return hex_nibble - 10 + 'A';
-}
-// helper function for bit to byte functions only 
-int HELPER_nib_to_hexval(const char c) {
-	if (c >= '0' && c <= '9') return c - '0';
-	if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-	if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-	assert(0 && "invalid hex digit found");
-	return -1; // error
-}
-
-// MAIN FUNCTIONS HEX & ASCII CONVERSION FUNCTION //
-
-// convert nibbles to a byte. e.g. set byte to 0x41 (char 'A'): byte= nibs_to_byte('4', '1');
-unsigned char nibs_to_byte(const char hi, const char lo) {
-	return (unsigned char)((HELPER_nib_to_hexval(hi) << 4) |HELPER_nib_to_hexval(lo));
-}
-// takes a binary file byte and updates the hi nibble
-void apply_hinib_to_byte(unsigned char *byte, const char hi) {
-	// set hi nibble to zero
-	*byte = *byte & 0x0F; 	// byte[0] = byte[0] & 0x0F;
-	// apply hi nibble
-	*byte = ((*byte) | (HELPER_nib_to_hexval(hi) << 4));
-}
-// takes a binary file byte and updates the low nibble
-void apply_lonib_to_byte(unsigned char *byte, const char lo) {
-	// set hi nibble to zero
-	*byte = *byte & 0xF0;
-	// set lo nibble to passed in nibble	
-	*byte = ((*byte) | (HELPER_nib_to_hexval(lo)));
-}
-
-// deconstruct byte to it's hi and low displayable nibbles: hex_to_nibs(byte, &hi, &lo);
-void byte_to_nibs(const unsigned char byte, char *hi, char *lo) {
-    *hi = HELPER_hexnib_to_char((byte >> 4) & 0xF);
-    *lo = HELPER_hexnib_to_char(byte & 0xF);
-}
-
-char byte_to_ascii(unsigned char b) 
-{
-    return (isprint(b) ? (char)b : '.');
-}
-
-///////////////////////////////////////////////////
-// Old helper functions
-///////////////////////////////////////////////////
-
-void byte_to_hex(unsigned char b, char *out) 
-{
-    const char hex_digits[] = "0123456789ABCDEF";
-    out[0] = hex_digits[b >> 4];    // high nibble
-    out[1] = hex_digits[b & 0x0F];  // low nibble
-    // out[2] is NOT null-terminated — just 2 chars
-}
-
-
-int hex_char_to_value(char c) 
-{
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'A' && c <= 'F') return 10 + (c - 'A');
-    if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
-    return -1;  // invalid hex char
-}
-
-unsigned char hex_to_byte(char high, char low) 
-{
-    int hi = hex_char_to_value(high);
-    int lo = hex_char_to_value(low);
-    if (hi < 0 || lo < 0) return 0; // or handle error
-    return (hi << 4) | lo;
-}
-
-unsigned long  popup_question(const char *qline1, const char *qline2, popup_types pt) 
-{
-	int ch, qlen, oldcs1, oldcs2;
-	char *endptr;
-	unsigned long answer;
-
-	// make sure we size to the longer of the question lines (and at least 21 so a 20byte long can be typed)
-	qlen = (strlen(qline1) > strlen(qline2)) ? strlen(qline1) : strlen(qline2);
-	qlen = (qlen < 21) ? 21 : qlen;
-	// Create window and panel
-	WINDOW *popup = newwin(4, (qlen+2), ((app.rows - 4) / 2), 
-					((app.cols - (qlen+2)) / 2));
-	PANEL  *panel = new_panel(popup);
-	keypad(popup, TRUE); // Enable keyboard input for the window
-	
-	// Draw border and message
-	box(popup, 0, 0);
-	wattron(popup, A_BOLD);
-	mvwprintw(popup, 1, 1, "%s", qline1);
-	mvwprintw(popup, 2, 1, "%s", qline2);
-	wattroff(popup, A_BOLD);
-	
-	// Show it
-	oldcs1 = curs_set(0);
-	update_panels();
-	doupdate();
-	
-	switch(pt){
-	case PTYPE_YN:	// don't end until y or n typed
-		do {
-			ch = wgetch(popup);
-		} while ((ch != 'y') && (ch != 'n'));
-		answer = (unsigned long)(ch == 'y');
-		break;
-
-	case PTYPE_CONTINUE: 	// end after any key
-		wgetch(popup);	
-		answer = (unsigned long)true;
-		break;
-	
-	case PTYPE_UNSIGNED_LONG:	// get a new file location (or default to 0 if invalid input)
-		// Move the cursor to the input position and get input
-		echo(); oldcs2 = curs_set(2);
-		mvwgetnstr(popup, 2, 1, tmp, 20); // 20 is max length of a 64bit unsigned long
-		noecho(); curs_set(oldcs2);
-		
-		// Convert string to unsigned long using strtoul
-		errno = 0; // Clear errno before the call
-		answer = strtoul(tmp, &endptr, 10);
-		
-		// Check for conversion errors
-		if (tmp[0] == '-' || endptr == tmp || *endptr != '\0' || errno == ERANGE)
-			answer = 0;
-		break;
-	}
-
-	// Clean up panel
-	curs_set(oldcs1);
-	hide_panel(panel);
-	update_panels();
-	doupdate();
-	del_panel(panel);
-	delwin(popup);
-
-	return answer;
-}
+char *tmp = NULL;
 
 ///////////////////////////////////////////////////
 // startup and close down
@@ -186,10 +38,11 @@ void initial_setup()
 	app.edmap = kh_init(charmap);
 
 	// general app defaults
-	app.mode=VIEW_MODE;	
+//	app.mode=VIEW_MODE;	
 
 	// set up global variable for debug & popup panel
-	tmp = malloc(256);
+	tmp = malloc(256); strcpy(tmp, " ");
+	helper.helpmsg = malloc(256); strcpy(helper.helpmsg, " ");
 	
 	// Hex window offset to start of file
 	hex.v_start = 0;
@@ -197,7 +50,7 @@ void initial_setup()
 	hex.cur_row=0;
 	hex.cur_col=0;
 	hex.cur_digit=0;	// first hex digit (takes 3 spaces)
-	hex.is_lnib = true;	// left nibble of that digit
+	hex.is_hinib = true;	// left nibble of that digit
 	
 	// show cursor
 	curs_set(2);
@@ -216,6 +69,7 @@ void final_close(int signum)
 	
 	// free any globals
 	free(tmp);
+	free(helper.helpmsg);
 	
 	// close out the hash
 	kh_clear(charmap, app.edmap);
@@ -237,62 +91,89 @@ void final_close(int signum)
 // main logic
 ///////////////////////////////////////////////////
 
-void handle_global_keys(int k)
-{
-	// first check if we're Esc out of any non-view mode or being forced out
-	// due to a screen resize
-	if (k==KEY_RESIZE)
+void handle_global_keys(int k) {
+//int idx;
+//unsigned char nibble;
+bool undo = false;
+
+	switch(k){
+	case KEY_MOUSE: // only handle in Edit mode
+		if ((getmouse(&event) == OK)) {
+		// Treat any of these as a "logical click"
+			const mmask_t CLICKY = BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | 
+						BUTTON1_TRIPLE_CLICKED | BUTTON1_PRESSED;
+			if (event.bstate & CLICKY) {
+				int row, col;
+				clickwin win = get_window_click(&event, &row, &col); // relative coords, or 'n'
+				e_handle_click(win, row, col);
+			}
+		}
+		break;
+
+	case KEY_RESIZE:
 		create_windows();
-		
-	v_handle_keys(k); 
-	v_update_all_windows();
-	doupdate();
+		handle_global_keys(KEY_REFRESH); // force an update
+		v_update_all_windows();
+		doupdate();
+		break;
 	
-/*		switch(k){
-		// special keys to change mode
-		case KEY_F2: 
-			app.mode=INSERT_MODE; 
-			// TEST!!
-//			create_view_menu(status.win);
-			break;
-		case 'd': 
-			app.mode=DELETE_MODE; 
-			break;
-		// g is part of view mode
-		case 'g': 
-			v_goto_byte(); 	// popup gets new hex.v_start
-			v_handle_keys(k);	//force recalcs using move
-			v_update_all_windows();
-			doupdate();
-			break;
-		// otherwise for all other keys hand off for view movement keys
-		default: 	
-			v_handle_keys(k); 
-			v_update_all_windows();
-			doupdate();
-			break;
-		}	*/
+	case KEY_TAB:
+	//ensure on left nib on ascii pane return
+		if(!hex.is_hinib){
+			hex.cur_col--;
+			hex.is_hinib=true;
+		}
+		// flip panes
+		app.in_hex = !app.in_hex;
+		break; 
+
+	case KEY_NCURSES_BACKSPACE:
+	case KEY_MAC_DELETE:
+		// first move left 
+//		e_handle_keys(KEY_LEFT);
+		// now set undo flag for any changes on this char or nibble 
+		undo = true;
+		// and trigger the delete
+
+
+	} // end switch
+
+	refresh_status();
+	refresh_helper();
+	// move the cursor
+	if (app.in_hex) {
+		wnoutrefresh(ascii.win);	
+		wmove(hex.win, hex.cur_row, hex.cur_col);
+		wnoutrefresh(hex.win);
+	} else {
+		wnoutrefresh(hex.win);
+		wmove(ascii.win, hex.cur_row, hex.cur_digit);
+		wnoutrefresh(ascii.win);	
+	}
+	doupdate();
+//snprintf(tmp,200,"in hex %i", app.in_hex); popup_question(tmp, "", PTYPE_CONTINUE);
+
 }
 
 void refresh_status()
 {
 	box(status.border, 0, 0);
-	mvwprintw(status.win, 0, 0, "Mode %s Fsize %lu offset %lu to %lu       ", app_mode_desc[app.mode], 
-					app.fsize, hex.v_start, hex.v_end);
-	mvwprintw(status.win, 1, 0, "Screen: %d rows, %d cols, grid %dx%d=%d", app.rows, app.cols, 
-					ascii.width, hex.height, hex.grid);
+	mvwprintw(status.win, 0, 0, "Fsize %lu offset %lu-%lu Screen: %dr %dc grid %dx%d=%d           ", 
+			app.fsize, hex.v_start, hex.v_end, app.rows, app.cols, ascii.width, hex.height, hex.grid);
+	mvwprintw(status.win, 1, 0, "Hex: cr %d cc %d cd %d Hwin %d hinib %d    ",
+			hex.cur_row, hex.cur_col, hex.cur_digit, app.in_hex, hex.is_hinib);
 	wnoutrefresh(status.border);
 	wnoutrefresh(status.win);
 }
 
-void refresh_helper(char *helpmsg)
+void refresh_helper()
 {
 	box(helper.border, 0, 0);
 	char *help_line = malloc(helper.width + 1 ); // +1 for null
 	memset(help_line, ' ', helper.width);
 	help_line[helper.width]='\0';
 	mvwprintw(helper.win, 0, 0, "%s", help_line);   // blank it out
-	mvwprintw(helper.win, 0, 0, "%s", helpmsg);     // and fill it new
+	mvwprintw(helper.win, 0, 0, "%s", helper.helpmsg);     // and fill it new
 	wnoutrefresh(helper.border);
 	wnoutrefresh(helper.win);
 	free(help_line);
@@ -342,48 +223,22 @@ signal(SIGTERM, final_close);
 
 	// Initial app setup
 	initial_setup();
-
 	// open file
 	if (open_file(argc, argv)) {
 		// and go....
 		init_view_mode();
 		create_windows();
-		int ch = KEY_HELP; // doesn't trigger anything
+
+		int ch = KEY_REFRESH; // doesn't trigger anything
 		// Main loop to handle input
-		while (	(app.mode != VIEW_MODE) ||
-			((app.mode == VIEW_MODE) && (ch != KEY_ESCAPE))) {
-
+		while (ch != KEY_ESCAPE) {
+			// if reresh, handle keys before we wait for another char
+			if(ch == KEY_REFRESH) handle_global_keys(ch);
 			ch = getch();
-			switch(ch){
-			case KEY_MOUSE: // only handle in Edit mode
-				if ((getmouse(&event) == OK)) {
-				// Treat any of these as a "logical click"
-					const mmask_t CLICKY = BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | 
-								BUTTON1_TRIPLE_CLICKED | BUTTON1_PRESSED;
-					if (event.bstate & CLICKY) {
-						int row, col;
-						clickwin win = get_window_click(&event, &row, &col); // relative coords, or 'n'
-						e_handle_click(win, row, col);
-					}
-				}
-				break;
-
-			case KEY_RESIZE:
-				create_windows();
-				e_handle_keys(ch); // force an update
-				v_update_all_windows();
-				doupdate();
-			break;
-			
-			default:
-				//if (!app.too_small) handle_global_keys(ch);
-			break;			
-			}
+			handle_global_keys(ch);
 		}
-		// no longer need the file open
-		close_file();
-	} 
-	
+	}
+	close_file(); 
 	// tidy up
 	final_close(0);		
 	return 0;

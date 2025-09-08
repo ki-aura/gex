@@ -2,7 +2,7 @@
 #include "view_mode.h"
 
 
-void v_handle_keys(int k)
+void vv_handle_keys(int k)
 {
 //////DP("in move mode");
 ////DP_ON = false;
@@ -83,7 +83,7 @@ void v_populate_grids()
 
 void v_refresh_hex()
 {
-		char t_hex[2];
+	char hinib, lonib;
 	box(hex.border, 0, 0);
 
 	int hr=0; // offset print row on grid. 1 avoids the borders
@@ -93,9 +93,9 @@ void v_refresh_hex()
 	while(i<grid_points ){
 		// print as much as a row as we can
 		while ((i < grid_points) && (hc < hex.width)){
-			byte_to_hex(app.map[hex.v_start + i], t_hex);			
-			mvwprintw(hex.win, hr, hc, "%c", t_hex[0]);
-			mvwprintw(hex.win, hr, hc+1, "%c", t_hex[1]);
+			byte_to_nibs(app.map[hex.v_start + i], &hinib, &lonib);			
+			mvwprintw(hex.win, hr, hc, "%c", hinib);
+			mvwprintw(hex.win, hr, hc+1, "%c", lonib);
 
 			hc+=3;
 			i++;
@@ -133,7 +133,7 @@ void v_update_all_windows()
 	if (!app.too_small){
 		v_populate_grids();
 	
-		refresh_helper("Options: quit insert edit delete test goto");
+		refresh_helper();
 		refresh_status();
 		v_refresh_hex();
 		v_refresh_ascii();
@@ -206,7 +206,7 @@ void create_windows()
 	}
 	
 	// simulate a move so that the changes in the grid size are reflected 
-	v_handle_keys(KEY_ESCAPE);
+//	handle_keys(KEY_REFRESH
 	
 	// populate the windows
 	v_update_all_windows();

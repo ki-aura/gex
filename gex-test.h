@@ -131,7 +131,7 @@ typedef struct {
 	int cur_row;	// cursor location (i.e. where to show it rather than where it is)
 	int cur_col;
 	int cur_digit;	// which hex digit (hinib lownib space) the cursor is on
-	bool is_lnib;	// are we on the left nibble (hi nibble)
+	bool is_hinib;	// are we on the left nibble (hi nibble)
 } hex_windef;
 
 typedef struct {
