@@ -90,7 +90,6 @@ typedef struct {
 	bool too_small; 	// less than 2 hex rows and 16 hex chars wide
 	// general 
 	bool in_hex;		// track which pane we're in during edit
-//	app_mode mode;		// view, edit etc
 	// file & mem handling
 	size_t fsize;		// file size
 	char *fname;		// file name
@@ -98,6 +97,7 @@ typedef struct {
 	int fd;			// file descriptor
 	struct stat fs;		// file stat
 	// hash table for file updates
+	int lastkey; 	// debug use
 	khash_t(charmap) *edmap;
 } appdef;
 
@@ -147,12 +147,9 @@ typedef struct {
 
 
 void handle_global_keys(int k);
-void initial_setup();
+bool initial_setup(int argc, char *argv[]);
 void final_close(int signum);
-void refresh_helper();
-void refresh_status();
 clickwin get_window_click(MEVENT *event, int *row, int *col);
-
 
 
 extern appdef app;
@@ -167,7 +164,15 @@ extern MEVENT event;
 
 // snprintf(tmp, 200, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
 
+
+void create_view_menu(WINDOW *status_win);
+
+
 // this needs to be last as it relies on the typedefs above
 #include "gex_helper_funcs.h"
+#include "edit_mode.h"
+#include "view_mode.h"
+#include "keyb_man.h"
+#include "win_man.h"
 
 #endif

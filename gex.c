@@ -18,7 +18,7 @@ char *tmp = NULL;
 // startup and close down
 ///////////////////////////////////////////////////
 
-void initial_setup()
+bool initial_setup(int argc, char *argv[])
 {
 	// Initialize ncurses & set defaults 
 	initscr();
@@ -38,7 +38,6 @@ void initial_setup()
 	app.edmap = kh_init(charmap);
 
 	// general app defaults
-//	app.mode=VIEW_MODE;	
 
 	// set up global variable for debug & popup panel
 	tmp = malloc(256); strcpy(tmp, " ");
@@ -56,8 +55,10 @@ void initial_setup()
 	curs_set(2);
 	wmove(hex.win, hex.cur_row, hex.cur_col);
 	wrefresh(hex.win);
-
+	
+	return open_file(argc,argv);
 }
+
 
 void final_close(int signum)
 {
@@ -75,6 +76,10 @@ void final_close(int signum)
 	kh_clear(charmap, app.edmap);
 	kh_destroy(charmap, app.edmap);
 	
+	// close file
+	close_file(); 
+
+	
 	// user message for forced close
 	if (signum == SIGINT){
 		fputs("Ended by Ctrl+C\n", stderr);
@@ -86,10 +91,6 @@ void final_close(int signum)
 		fputs("Programme Killed\n", stderr);
 		exit(EXIT_FAILURE);}
 }
-
-///////////////////////////////////////////////////
-// main logic
-///////////////////////////////////////////////////
 
 void handle_global_keys(int k) {
 //int idx;
@@ -105,78 +106,43 @@ bool undo = false;
 			if (event.bstate & CLICKY) {
 				int row, col;
 				clickwin win = get_window_click(&event, &row, &col); // relative coords, or 'n'
-				e_handle_click(win, row, col);
+				handle_click(win, row, col);
+				update_cursor();
 			}
 		}
 		break;
 
 	case KEY_RESIZE:
 		create_windows();
-		handle_global_keys(KEY_REFRESH); // force an update
-		v_update_all_windows();
-		doupdate();
+		update_all_windows();
 		break;
 	
-	case KEY_TAB:
-	//ensure on left nib on ascii pane return
-		if(!hex.is_hinib){
-			hex.cur_col--;
-			hex.is_hinib=true;
-		}
-		// flip panes
-		app.in_hex = !app.in_hex;
-		break; 
-
+	// in-screen key movement
 	case KEY_NCURSES_BACKSPACE:
 	case KEY_MAC_DELETE:
-		// first move left 
-//		e_handle_keys(KEY_LEFT);
-		// now set undo flag for any changes on this char or nibble 
-		undo = true;
-		// and trigger the delete
-
+	case KEY_LEFT:
+	case KEY_RIGHT:
+	case KEY_HOME:
+	case KEY_END:
+	case KEY_TAB:
+		handle_in_screen_movement(k);
+		break;
+	
+	// 
+	case KEY_UP:
+	case KEY_DOWN:
+	case KEY_NPAGE:
+	case KEY_PPAGE:
+	//case MENU_GOTO:
+		handle_scrolling_movement(k);
+		break;
+	
+	//default checks for editing
+	default: 
+		handle_edit_keys(k);
 
 	} // end switch
 
-	refresh_status();
-	refresh_helper();
-	// move the cursor
-	if (app.in_hex) {
-		wnoutrefresh(ascii.win);	
-		wmove(hex.win, hex.cur_row, hex.cur_col);
-		wnoutrefresh(hex.win);
-	} else {
-		wnoutrefresh(hex.win);
-		wmove(ascii.win, hex.cur_row, hex.cur_digit);
-		wnoutrefresh(ascii.win);	
-	}
-	doupdate();
-//snprintf(tmp,200,"in hex %i", app.in_hex); popup_question(tmp, "", PTYPE_CONTINUE);
-
-}
-
-void refresh_status()
-{
-	box(status.border, 0, 0);
-	mvwprintw(status.win, 0, 0, "Fsize %lu offset %lu-%lu Screen: %dr %dc grid %dx%d=%d           ", 
-			app.fsize, hex.v_start, hex.v_end, app.rows, app.cols, ascii.width, hex.height, hex.grid);
-	mvwprintw(status.win, 1, 0, "Hex: cr %d cc %d cd %d Hwin %d hinib %d    ",
-			hex.cur_row, hex.cur_col, hex.cur_digit, app.in_hex, hex.is_hinib);
-	wnoutrefresh(status.border);
-	wnoutrefresh(status.win);
-}
-
-void refresh_helper()
-{
-	box(helper.border, 0, 0);
-	char *help_line = malloc(helper.width + 1 ); // +1 for null
-	memset(help_line, ' ', helper.width);
-	help_line[helper.width]='\0';
-	mvwprintw(helper.win, 0, 0, "%s", help_line);   // blank it out
-	mvwprintw(helper.win, 0, 0, "%s", helper.helpmsg);     // and fill it new
-	wnoutrefresh(helper.border);
-	wnoutrefresh(helper.win);
-	free(help_line);
 }
 
 
@@ -222,25 +188,116 @@ signal(SIGQUIT, final_close);
 signal(SIGTERM, final_close);
 
 	// Initial app setup
-	initial_setup();
-	// open file
-	if (open_file(argc, argv)) {
-		// and go....
-		init_view_mode();
+	if(initial_setup(argc, argv)){
+		// everything opened fine... crack on!
 		create_windows();
-
+	
 		int ch = KEY_REFRESH; // doesn't trigger anything
 		// Main loop to handle input
-		while (ch != KEY_ESCAPE) {
+		while (ch != KEY_SEND) {
+	app.lastkey = ch;
 			// if reresh, handle keys before we wait for another char
+			// used by multiple functions to force a screen refresh
 			if(ch == KEY_REFRESH) handle_global_keys(ch);
+			
+			if(ch == KEY_ESCAPE) create_view_menu(status.win);
+			
 			ch = getch();
 			handle_global_keys(ch);
 		}
+
 	}
-	close_file(); 
 	// tidy up
 	final_close(0);		
 	return 0;
+}
+
+// menu functions
+ 
+
+// panel version
+void create_view_menu(WINDOW *status_win)
+{
+    int mi = 7;
+    ITEM *items[mi];
+    MENU *menu;
+    WINDOW *sub;
+    PANEL *menu_panel;
+    WINDOW *menu_win;
+    int h, w;
+
+    // Define items sequentially
+    items[0] = new_item("Quit", NULL);
+    items[1] = new_item("Save Changes", NULL);
+    items[2] = new_item("Abandon Changes", NULL);
+    items[3] = new_item("Goto Byte", NULL);
+    items[4] = new_item("Insert Bytes", NULL);
+    items[5] = new_item("Delete Bytes", NULL);
+    items[6] = NULL;  // terminator
+
+
+    // Create the menu
+    menu = new_menu((ITEM **)items);
+
+    // Size & position for popup menu window
+    getmaxyx(status_win, h, w);
+    int menu_h = 3;         // 1 row for items + border
+    int menu_w = w - 4;     // slightly narrower than status_win
+    int starty = 2;         // below top border/title
+    int startx = 2;
+
+    menu_win = newwin(menu_h, menu_w, starty, startx);
+    box(menu_win, 0, 0);
+
+    // Subwindow for items inside menu_win
+    sub = derwin(menu_win, 1, menu_w - 2, 1, 1);
+    set_menu_win(menu, menu_win);
+    set_menu_sub(menu, sub);
+    set_menu_format(menu, 1, (mi-1));  // horizontal
+    set_menu_mark(menu, "");      // no arrows
+    keypad(menu_win, TRUE);
+
+    // Create panel so it appears above status_win
+    menu_panel = new_panel(menu_win);
+    top_panel(menu_panel);
+    update_panels();
+    doupdate();
+
+    post_menu(menu);
+    wrefresh(menu_win);
+
+    // Event loop
+    int c;
+    while ((c = wgetch(menu_win)) != KEY_ESCAPE) {
+        switch (c) {
+            case KEY_LEFT:
+                menu_driver(menu, REQ_LEFT_ITEM);
+                break;
+            case KEY_RIGHT:
+                menu_driver(menu, REQ_RIGHT_ITEM);
+                break;
+            case 10: // Enter
+                mvwprintw(status_win, h - 2, 2,
+                          "Selected: %s", item_name(current_item(menu)));
+                wclrtoeol(status_win);
+                wrefresh(status_win);
+                break;
+        }
+        wrefresh(sub);
+        update_panels();
+        doupdate();
+    }
+
+    // Cleanup
+    unpost_menu(menu);
+    free_menu(menu);
+    for (int i = 0; i < mi; i++)
+        free_item(items[i]);
+
+    hide_panel(menu_panel);
+    del_panel(menu_panel);
+    delwin(menu_win);
+    update_all_windows();
+    handle_global_keys(KEY_REFRESH);
 }
 
