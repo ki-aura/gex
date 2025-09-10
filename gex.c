@@ -78,7 +78,6 @@ void final_close(int signum)
 	
 	// close file
 	close_file(); 
-
 	
 	// user message for forced close
 	if (signum == SIGINT){
@@ -93,9 +92,6 @@ void final_close(int signum)
 }
 
 void handle_global_keys(int k) {
-//int idx;
-//unsigned char nibble;
-bool undo = false;
 
 	switch(k){
 	case KEY_MOUSE: // only handle in Edit mode
@@ -114,6 +110,7 @@ bool undo = false;
 
 	case KEY_RESIZE:
 		create_windows();
+		handle_in_screen_movement(KEY_HOME); // reset cursor location
 		update_all_windows();
 		break;
 	
@@ -195,14 +192,15 @@ signal(SIGTERM, final_close);
 		int ch = KEY_REFRESH; // doesn't trigger anything
 		// Main loop to handle input
 		while (ch != KEY_SEND) {
-	app.lastkey = ch;
 			// if reresh, handle keys before we wait for another char
 			// used by multiple functions to force a screen refresh
 			if(ch == KEY_REFRESH) handle_global_keys(ch);
 			
-			if(ch == KEY_ESCAPE) create_view_menu(status.win);
+			if(ch == KEY_ESCAPE) 
+				if(create_main_menu()) break; // true if quit is selected
 			
 			ch = getch();
+app.lastkey = ch;
 			handle_global_keys(ch);
 		}
 
@@ -216,88 +214,123 @@ signal(SIGTERM, final_close);
  
 
 // panel version
-void create_view_menu(WINDOW *status_win)
+bool create_main_menu()
 {
-    int mi = 7;
-    ITEM *items[mi];
+    int mi = 6;
+    ITEM *items[mi+1]; // + null
     MENU *menu;
-    WINDOW *sub;
+//    WINDOW *sub;
     PANEL *menu_panel;
     WINDOW *menu_win;
-    int h, w;
+    int c;
+
 
     // Define items sequentially
-    items[0] = new_item("Quit", NULL);
-    items[1] = new_item("Save Changes", NULL);
-    items[2] = new_item("Abandon Changes", NULL);
-    items[3] = new_item("Goto Byte", NULL);
-    items[4] = new_item("Insert Bytes", NULL);
-    items[5] = new_item("Delete Bytes", NULL);
+    items[0] = new_item("QUIT", "q");
+    items[1] = new_item("SAVE_Changes", "s");
+    items[2] = new_item("ABANDON_Changes", "a");
+    items[3] = new_item("GOTO_Byte", "g");
+    items[4] = new_item("INSERT_Bytes", "i");
+    items[5] = new_item("DELETE_Bytes", "d");
     items[6] = NULL;  // terminator
 
+   menu = new_menu(items);
 
-    // Create the menu
-    menu = new_menu((ITEM **)items);
+    int win_height = 10;
+    int win_width  = 40;
+    int starty = (LINES - win_height) / 2;
+    int startx = (COLS - win_width) / 2;
 
-    // Size & position for popup menu window
-    getmaxyx(status_win, h, w);
-    int menu_h = 3;         // 1 row for items + border
-    int menu_w = w - 4;     // slightly narrower than status_win
-    int starty = 2;         // below top border/title
-    int startx = 2;
-
-    menu_win = newwin(menu_h, menu_w, starty, startx);
-    box(menu_win, 0, 0);
-
-    // Subwindow for items inside menu_win
-    sub = derwin(menu_win, 1, menu_w - 2, 1, 1);
-    set_menu_win(menu, menu_win);
-    set_menu_sub(menu, sub);
-    set_menu_format(menu, 1, (mi-1));  // horizontal
-    set_menu_mark(menu, "");      // no arrows
+    menu_win = newwin(win_height, win_width, starty, startx);
     keypad(menu_win, TRUE);
 
-    // Create panel so it appears above status_win
+    // Attach menu to window
+    set_menu_win(menu, menu_win);
+    set_menu_sub(menu, derwin(menu_win, win_height - 4, win_width - 2, 3, 1));
+    
+    set_menu_mark(menu, " * ");
+
+    box(menu_win, 0, 0);
+    mvwprintw(menu_win, 1, 1, "Use arrows, Enter, ESC");
+
+    post_menu(menu);
     menu_panel = new_panel(menu_win);
-    top_panel(menu_panel);
     update_panels();
     doupdate();
 
-    post_menu(menu);
-    wrefresh(menu_win);
-
-    // Event loop
-    int c;
-    while ((c = wgetch(menu_win)) != KEY_ESCAPE) {
+    while ((c = wgetch(menu_win)) != 27) { // ESC
         switch (c) {
-            case KEY_LEFT:
-                menu_driver(menu, REQ_LEFT_ITEM);
+            case KEY_DOWN:
+                menu_driver(menu, REQ_DOWN_ITEM);
                 break;
-            case KEY_RIGHT:
-                menu_driver(menu, REQ_RIGHT_ITEM);
+            case KEY_UP:
+                menu_driver(menu, REQ_UP_ITEM);
                 break;
-            case 10: // Enter
-                mvwprintw(status_win, h - 2, 2,
-                          "Selected: %s", item_name(current_item(menu)));
-                wclrtoeol(status_win);
-                wrefresh(status_win);
+            case KEY_ESCAPE:
+            	goto cleanup;
+            	break;
+            case 10: { // Enter
+                ITEM *cur = current_item(menu);
+                const char *name = item_name(cur);
+                if (strcmp(name, item_name(items[0])) == 0) return TRUE; //quit
+                else if (strcmp(name, item_name(items[1])) == 0) goto save;
+                else if (strcmp(name, item_name(items[2])) == 0) goto abandon;
+                else if (strcmp(name, item_name(items[3])) == 0) goto gotobyte;
+                else if (strcmp(name, item_name(items[4])) == 0) goto insert;
+                else if (strcmp(name, item_name(items[5])) == 0) goto delete;
                 break;
+            }
+            case 'q': case 'Q':
+                return TRUE; //quit
+            case 's':
+              	goto save; break;
+            case 'a':
+              	goto abandon; break;
+            case 'g':
+              	goto gotobyte; break;
+            case 'i':
+              	goto insert; break;
+            case 'd':
+              	goto delete; break;
         }
-        wrefresh(sub);
         update_panels();
         doupdate();
     }
 
-    // Cleanup
+//nothing selected
+goto cleanup;
+  
+save:
+	save_changes();
+	goto cleanup;
+
+abandon:
+    abandon_changes();
+	goto cleanup;
+
+gotobyte:
+	handle_scrolling_movement(KEY_MOVE);
+	goto cleanup;
+
+insert:
+
+	goto cleanup;
+
+delete:
+
+	goto cleanup;
+
+cleanup:
     unpost_menu(menu);
     free_menu(menu);
-    for (int i = 0; i < mi; i++)
-        free_item(items[i]);
+    for (int i = 0; items[i]; i++) free_item(items[i]);
 
     hide_panel(menu_panel);
     del_panel(menu_panel);
     delwin(menu_win);
+
     update_all_windows();
-    handle_global_keys(KEY_REFRESH);
+    handle_global_keys(KEY_RESIZE);
+    return FALSE;
 }
 

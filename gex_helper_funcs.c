@@ -1,55 +1,5 @@
 #include "gex.h"
 
-
-// IMPORTANT NOTE
-// nibbles are printable chars 0123456789ABCDEF
-// bytes are unsigned chars - they come from a file
-
-// helper function for byte_to_nibs only
-static unsigned char HELPER_hexnib_to_char(unsigned char hex_nibble) {
-    if (hex_nibble < 10) return hex_nibble + '0';
-    else return hex_nibble - 10 + 'A';
-}
-// helper function for bit to byte functions only 
-static int HELPER_nib_to_hexval(const char c) {
-	if (c >= '0' && c <= '9') return c - '0';
-	if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-	if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-	assert(0 && "invalid hex digit found");
-	return -1; // error
-}
-
-// MAIN FUNCTIONS HEX & ASCII CONVERSION FUNCTION //
-
-// convert nibbles to a byte. e.g. set byte to 0x41 (char 'A'): byte= nibs_to_byte('4', '1');
-unsigned char nibs_to_byte(const char hi, const char lo) {
-	return (unsigned char)((HELPER_nib_to_hexval(hi) << 4) |HELPER_nib_to_hexval(lo));
-}
-// takes a binary file byte and updates the hi nibble
-void apply_hinib_to_byte(unsigned char *byte, const char hi) {
-	// set hi nibble to zero
-	*byte = *byte & 0x0F; 	// byte[0] = byte[0] & 0x0F;
-	// apply hi nibble
-	*byte = ((*byte) | (HELPER_nib_to_hexval(hi) << 4));
-}
-// takes a binary file byte and updates the low nibble
-void apply_lonib_to_byte(unsigned char *byte, const char lo) {
-	// set hi nibble to zero
-	*byte = *byte & 0xF0;
-	// set lo nibble to passed in nibble	
-	*byte = ((*byte) | (HELPER_nib_to_hexval(lo)));
-}
-
-// deconstruct byte to it's hi and low displayable nibbles: hex_to_nibs(byte, &hi, &lo);
-void byte_to_nibs(const unsigned char byte, char *hi, char *lo) {
-    *hi = HELPER_hexnib_to_char((byte >> 4) & 0xF);
-    *lo = HELPER_hexnib_to_char(byte & 0xF);
-}
-
-char byte_to_ascii(unsigned char b) {
-    return (isprint(b) ? (char)b : '.');
-}
-
 unsigned long  popup_question(const char *qline1, const char *qline2, popup_types pt) {
 	int ch, qlen, oldcs1, oldcs2;
 	char *endptr;
@@ -92,7 +42,7 @@ unsigned long  popup_question(const char *qline1, const char *qline2, popup_type
 	case PTYPE_UNSIGNED_LONG:	// get a new file location (or default to 0 if invalid input)
 		// Move the cursor to the input position and get input
 		echo(); oldcs2 = curs_set(2);
-		mvwgetnstr(popup, 2, 1, tmp, 20); // 20 is max length of a 64bit unsigned long
+		mvwgetnstr(popup, 2, 1, tmp, 16); // 20 is max length of a 64bit unsigned long
 		noecho(); curs_set(oldcs2);
 		
 		// Convert string to unsigned long using strtoul
@@ -115,3 +65,77 @@ unsigned long  popup_question(const char *qline1, const char *qline2, popup_type
 
 	return answer;
 }
+
+// IMPORTANT NOTE
+// nibbles are printable chars 0123456789ABCDEF
+// bytes are unsigned chars - they come from a file
+
+// helper function for byte_to_nibs only
+static unsigned char HELPER_hexnib_to_char(unsigned char hex_nibble) {
+    if (hex_nibble < 10) return hex_nibble + '0';
+    else return hex_nibble - 10 + 'A';
+}
+// helper function for bit to byte functions only 
+static int HELPER_nib_to_hexval(const char c) {
+	if (c >= '0' && c <= '9') return c - '0';
+	if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+	if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+	// if we get here bad things have happened...
+	snprintf(tmp, 200, "invalid hex digit found %c %u", c, c );
+	popup_question(tmp, "", PTYPE_CONTINUE);
+	assert(0 && "invalid digit in hex");
+	return -1; // error
+}
+
+// MAIN FUNCTIONS HEX & ASCII CONVERSION FUNCTIONS //
+
+// convert nibbles to a byte. e.g. set byte to 0x41 (char 'A'): byte= nibs_to_byte('4', '1');
+unsigned char nibs_to_byte(const char hi, const char lo) {
+	return (unsigned char)((HELPER_nib_to_hexval(hi) << 4) |HELPER_nib_to_hexval(lo));
+}
+// takes a binary file byte and updates the hi nibble
+void apply_hinib_to_byte(unsigned char *byte, const char hi) {
+	// set hi nibble to zero
+	*byte = *byte & 0x0F; 	// byte[0] = byte[0] & 0x0F;
+	// apply hi nibble
+	*byte = ((*byte) | (HELPER_nib_to_hexval(hi) << 4));
+}
+// takes a binary file byte and updates the low nibble
+void apply_lonib_to_byte(unsigned char *byte, const char lo) {
+	// set hi nibble to zero
+	*byte = *byte & 0xF0;
+	// set lo nibble to passed in nibble	
+	*byte = ((*byte) | (HELPER_nib_to_hexval(lo)));
+}
+
+// deconstruct byte to it's hi and low displayable nibbles: hex_to_nibs(byte, &hi, &lo);
+void byte_to_nibs(const unsigned char byte, char *hi, char *lo) {
+    *hi = HELPER_hexnib_to_char((byte >> 4) & 0xF);
+    *lo = HELPER_hexnib_to_char(byte & 0xF);
+}
+
+char byte_to_ascii(unsigned char b) {
+    return (isprint(b) ? (char)b : '.');
+}
+
+// MAIN SCREEN CONVERSION FUNCTIONS //
+
+bool file_offset_to_rc(int byte_offset, int *row, int *h_col, int *a_col){
+	if((hex.v_start + byte_offset) > app.fsize) return false;
+	*row = byte_offset / ascii.width;
+	*a_col = byte_offset - (ascii.width * (*row));
+	*h_col = (*a_col) * 3;
+	return true;
+}
+
+int row_digit_to_offset(int row, int digit){
+	return (row * ascii.width) + digit;
+}
+
+
+
+
+
+
+
+

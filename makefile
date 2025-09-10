@@ -15,7 +15,7 @@ CFLAGS_COMMON  = -Wextra
 CFLAGS_DEBUG   = -g
 LIBS           = -lncurses -lpanel -lmenu
 TARGET         = gex
-SRC            = gex.c file_handling.c edit_mode.c gex_helper_funcs.c keyb_man.c win_man.c
+SRC            = gex.c file_handling.c gex_helper_funcs.c keyb_man.c win_man.c 
 OBJ            = $(SRC:.c=.o)
 
 .PHONY: all clean tidy asan tsan release

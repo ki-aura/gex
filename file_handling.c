@@ -60,5 +60,52 @@ int cmp_key(const void *a, const void *b) {
 }
 
 
+void save_changes(){
+	if (kh_size(app.edmap) == 0)
+		popup_question("No changes made",
+			"Press any key to continue", PTYPE_CONTINUE);
+	else if(popup_question("Are you sure you want to save changes?",
+			"This action can not be undone (y/n)", PTYPE_YN)){
+	
+		// save changes 
+		for (slot = kh_begin(app.edmap); slot != kh_end(app.edmap); slot++) {
+			if (kh_exist(app.edmap, slot)) {
+/*			size_t i = kh_key(app.edmap, slot);
+                int v = kh_val(app.edmap, slot);
+			
+			snprintf(tmp,40,"o: %lu b: %i",i, v);
+			popup_question(tmp, "", PTYPE_CONTINUE);
+ */
+            app.map[kh_key(app.edmap, slot)] = kh_val(app.edmap, slot);
+			}
+		}
+		
+		// and sync it out
+		msync(app.map, app.fsize, MS_SYNC);
+		// clear change history as these are now permanent
+		kh_clear(charmap, app.edmap);
+		// refresh to get rid of old change highlights
+		update_all_windows();
+		handle_global_keys(KEY_REFRESH);
+	}	
+}
+
+void abandon_changes(){
+    if (kh_size(app.edmap) == 0)
+        popup_question("No changes to abandon",
+            "Press any key to continue", PTYPE_CONTINUE);
+    else if(popup_question("Are you sure you want to abandon changes?",
+            "This action can not be undone (y/n)", PTYPE_YN)){
+    
+        // abandon changes
+        kh_clear(charmap, app.edmap);
+        // refresh to get rid of old change highlights
+        update_all_windows();
+        handle_global_keys(KEY_REFRESH);
+    }
+}
+
+
+
 
 

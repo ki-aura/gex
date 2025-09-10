@@ -1,9 +1,8 @@
-hellow  = gcc
+ef|low  = gcc
 CFLAGS  = -Wextra -g
 LIBS    = -ldcurses -lpanel
 TARGET  = gex
-SRC     = gex.c dp.c view_mode.c file_handling.c
-OBJ     = $(SRC:.c=.o)
+SRC     = gex.c dp.c view_mode.c file_handlind&hšOBJ     = $(SRC:.c=.o)
 
 all: $(TARGET)
 

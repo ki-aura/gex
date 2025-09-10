@@ -1,6 +1,51 @@
 #include "gex.h"
 
 
+void rrefresh_hex() {
+
+///////////// CHECK E_REFRESH FOR CHANGE HANDLING
+	char hinib, lonib;
+	int hr=0, hc=0, i=0; 
+	
+	int grid_points = hex.grid * 3; // 3 chars per hex byte; hi lo space
+	while((i<grid_points) && ((hex.v_start+i) < app.fsize)){
+		// print as much as a row as we can
+		while ((i < grid_points) && (hc < hex.width) && ((hex.v_start+i) < app.fsize)){
+			byte_to_nibs(app.map[hex.v_start + i], &hinib, &lonib);			
+			mvwprintw(hex.win, hr, hc, "%c", hinib);
+			mvwprintw(hex.win, hr, hc+1, "%c", lonib);
+			hc+=3; // 2 nibbles and a space
+			i++;	// next byte
+		}
+		hc = 0;
+		hr++;
+	}
+	box(hex.border, 0, 0);
+	wnoutrefresh(hex.border);
+	wnoutrefresh(hex.win);
+}
+
+void rrefresh_ascii() {
+///////////// CHECK E_REFRESH FOR CHANGE HANDLING
+	int ar=0, ac=0, i=0; 
+	
+	while((i<hex.grid) && ((hex.v_start+i) < app.fsize)){
+		// print as much as a row as we can
+		while ((i < hex.grid) && (ac < ascii.width) && ((hex.v_start+i) < app.fsize)){
+			mvwprintw(ascii.win, ar, ac, "%c", byte_to_ascii(app.map[hex.v_start + i]));
+			ac++;
+			i++;
+		}
+		ac = 0;
+		ar++;
+	}
+	box(ascii.border, 0, 0);
+	wnoutrefresh(ascii.border);
+	wnoutrefresh(ascii.win);
+}
+
+
+
 void e_init_view_mode()
 {
 	// grab a screen copy
@@ -170,30 +215,102 @@ bool chg;
 	wnoutrefresh(ascii.win);
 }
 
-void e_save_changes(){
-	if (kh_size(app.edmap) == 0)
-		popup_question("No changes made",
-			"Press any key to continue", PTYPE_CONTINUE);
-	else if(popup_question("Are you sure you want to save changes?",
-			"This action can not be undone (y/n)", PTYPE_YN)){
-		// save changes 
-		// replace app.map segment with update changes & msync
-	//	memcpy((app.map + hex.v_start), hex.map_copy, hex.map_copy_len);
-		
-		// and sync it out
-		msync(app.map, app.fsize, MS_SYNC);
-		// clear change history as these are now permanent
-		kh_clear(charmap, app.edmap);
-		// refresh to get rid of old change highlights
-		e_build_grids_from_map_copy();
-		e_refresh_ascii();
-		e_refresh_hex();
+//////////////////////////////////////////////////////////////////////
 
-		e_end_edit_mode(KEY_HELP); // doesn't trigger anything
-		e_handle_keys(KEY_HELP); // just triggers the screen refresh
+
+void e_handle_keys(int k){
+int idx;
+unsigned char nibble;
+bool undo = false;
 	
+
+	// now continue with functional keys here
+	switch(k){
+	// do stuff
+	case KEY_MAC_ENTER:
+		e_save_changes();
+		break;
+	
+//int ascii_rc_to_offset(int row, int col);
+//int hex_rc_to_offset(int row, int col);
+	
+	default: 	
+		// handle non-movement - editing 		
+		// where are we in hex.gc_copy
+		//idx = ascii_rc_to_offset(hex.cur_row, ascii.cur_col);
+//		(((hex.cur_row-1) * ascii.width) + (hex.cur_digit-1));
+		//return (row * ascii.width) + digit;
+	
+		if (undo){
+			// backspace was pressed
+			// check if there's a real change at this point, or we've typed what was orignally there
+			slot = kh_get(charmap, app.edmap, (size_t)(app.map + hex.v_start + idx));
+			if (slot != kh_end(app.edmap)) {
+				// set the bit back to the original map
+				// remove the undo map 
+				kh_del(charmap, app.edmap, slot);
+				e_build_grids_from_map_copy();
+				e_refresh_ascii();
+				e_refresh_hex();
+			}
+		} else {	
+			// normal edit processing (not undo)	
+			idx = row_digit_to_offset(hex.cur_row, hex.cur_digit);
+			if (!app.in_hex) { // we're in ascii pane
+			    if (isprint(k)) {
+				// if it's the same as the underlying file then get rid of any edit map
+				if( k == app.map[hex.v_start + idx]){
+					slot = kh_get(charmap, app.edmap, (size_t)(hex.v_start + idx));
+					if (slot != kh_end(app.edmap)) 
+						kh_del(charmap, app.edmap, slot);
+					}
+				else {  // push the change onto the edit map
+					slot = kh_put(charmap, app.edmap, (size_t)(hex.v_start + idx), &khret);
+					kh_val(app.edmap, slot) = (unsigned char)k;
+				}
+				// Update and move
+				update_all_windows();
+				handle_in_screen_movement(KEY_RIGHT);
+			    }
+			} else {  // we are in hex pane
+				if ((k >= '0' && k <= '9') || (k >= 'A' && k <= 'F') || (k >= 'a' && k <= 'f')) {
+					nibble = (k >= '0' && k <= '9') ? (k - '0') :
+						       (k >= 'a') ? (k - 'a' + 10) : (k - 'A' + 10);
+	
+					if (hex.is_hinib) {
+						// push the change onto the edit map
+						slot = kh_put(charmap, app.edmap, (size_t)(hex.v_start + idx), &khret);
+						kh_val(app.edmap, slot) = (unsigned char)((app.map[hex.v_start + idx] & 0x0F) | (nibble << 4));
+					} else {
+						// push the change onto the edit map
+						slot = kh_put(charmap, app.edmap, (size_t)(hex.v_start + idx), &khret);
+						kh_val(app.edmap, slot) = (unsigned char)((app.map[hex.v_start + idx] & 0xF0) | nibble);
+					}
+				// Update and move
+				update_all_windows();
+				handle_in_screen_movement(KEY_RIGHT);
+				}
+			}
+		}
+		break;
 	}
+
+
 }
+
+void vvv_handle_keys(int k){
+
+}
+
+void goto_byte(){
+ 
+}
+void e_handle_full_grid_keys(int k){
+}
+void e_handle_partial_grid_keys(int k){
+}
+
+
 
 
 

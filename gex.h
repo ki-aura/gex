@@ -96,8 +96,8 @@ typedef struct {
 	unsigned char *map;  	// mmap base
 	int fd;			// file descriptor
 	struct stat fs;		// file stat
-	// hash table for file updates
 	int lastkey; 	// debug use
+	// hash table for file updates
 	khash_t(charmap) *edmap;
 } appdef;
 
@@ -150,6 +150,7 @@ void handle_global_keys(int k);
 bool initial_setup(int argc, char *argv[]);
 void final_close(int signum);
 clickwin get_window_click(MEVENT *event, int *row, int *col);
+bool create_main_menu();
 
 
 extern appdef app;
@@ -165,12 +166,10 @@ extern MEVENT event;
 // snprintf(tmp, 200, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
 
 
-void create_view_menu(WINDOW *status_win);
 
 
 // this needs to be last as it relies on the typedefs above
 #include "gex_helper_funcs.h"
-#include "edit_mode.h"
 #include "view_mode.h"
 #include "keyb_man.h"
 #include "win_man.h"

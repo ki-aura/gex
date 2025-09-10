@@ -3,6 +3,7 @@
 
 bool open_file(int argc, char *argv[]);
 void close_file();
-
+void save_changes();
+void abandon_changes();
 
 #endif

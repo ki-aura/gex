@@ -81,70 +81,69 @@ if (ascii.border != NULL) {delwin(ascii.border); ascii.border = NULL; }
 }
 
 void refresh_status() {
-	box(status.border, 0, 0);
 	mvwprintw(status.win, 0, 0, "Fsize %lu offset %lu-%lu Screen: %dr %dc grid %dx%d=%d           ", 
-			app.fsize, hex.v_start, hex.v_end, app.rows, app.cols, ascii.width, hex.height, hex.grid);
+			app.fsize, hex.v_start, hex.v_start+hex.grid-1, app.rows, app.cols, ascii.width, hex.height, hex.grid);
+
+	box(status.border, 0, 0);
 	wnoutrefresh(status.border);
 	wnoutrefresh(status.win);
 }
 
 void refresh_helper() {
-	box(helper.border, 0, 0);
 	char *help_line = malloc(helper.width + 1 ); // +1 for null
 	memset(help_line, ' ', helper.width);
 	help_line[helper.width]='\0';
 	mvwprintw(helper.win, 0, 0, 
-			"Hex: cr %d cc %d cd %d Hwin %d hinib %d h %d aw %d hw %d lk %d mxr %d mPcl %d   ",
+			"Hex: cr %2d cc %2d cd %2d Hwin %d hinib %d h %2d aw %3d hw %3d lk %3d chgs %3d   ",
 			hex.cur_row, hex.cur_col, hex.cur_digit, app.in_hex, hex.is_hinib, 
-			hex.height, ascii.width, hex.width, app.lastkey, hex.max_row, hex.map_copy_len);
+			hex.height, ascii.width, hex.width, app.lastkey, kh_size(app.edmap));
 	mvwprintw(helper.win, 1, 0, "%s", help_line);   // blank it out
 	mvwprintw(helper.win, 1, 0, "%s", helper.helpmsg);     // and fill it new
+
+	box(helper.border, 0, 0);
 	wnoutrefresh(helper.border);
 	wnoutrefresh(helper.win);
+
 	free(help_line);
-	wnoutrefresh(helper.border);
-	wnoutrefresh(helper.win);
 }
 
-
-void refresh_hex() {
-
-///////////// CHECK E_REFRESH FOR CHANGE HANDLING
-	char hinib, lonib;
-	int hr=0, hc=0, i=0; 
+void refresh_grids(){
+	char hinib, lonib, a_char;
+	int offset = 0, r=0, hc=0, ac=0;
+	bool chg;
 	
-	int grid_points = hex.grid * 3;
-	while(i<grid_points){
-		// print as much as a row as we can
-		while ((i < grid_points) && (hc < hex.width)){
-			byte_to_nibs(app.map[hex.v_start + i], &hinib, &lonib);			
-			mvwprintw(hex.win, hr, hc, "%c", hinib);
-			mvwprintw(hex.win, hr, hc+1, "%c", lonib);
-			hc+=3; // 2 nibbles and a space
-			i++;	// next byte
+	while(file_offset_to_rc(offset, &r, &hc, &ac)) {	//while v_start + offset is < end of file
+														// this also gives us grid coordinates
+		// break the byte into displayable nibbles for the hex window
+		byte_to_nibs(app.map[hex.v_start + offset], &hinib, &lonib);
+		// check if there's an edit for this char
+		slot = kh_get(charmap, app.edmap, (size_t)(hex.v_start + offset));
+		if (slot != kh_end(app.edmap)) {
+			// get the changed byte
+			chg=true;
+			byte_to_nibs(kh_val(app.edmap, slot), &hinib, &lonib);
+			a_char = byte_to_ascii(kh_val(app.edmap, slot));
+		} else {
+			chg=false;
+			a_char = byte_to_ascii(app.map[hex.v_start + offset]);
 		}
-		hc = 0;
-		hr++;
+		
+		// update the grids
+		if (chg) wattron(hex.win, COLOR_PAIR(1) | A_BOLD);	
+		mvwprintw(hex.win, r, hc, "%c", hinib);
+		mvwprintw(hex.win, r, hc+1, "%c", lonib);
+		if (chg) wattroff(hex.win,COLOR_PAIR(1) |  A_BOLD);
+
+		if (chg) wattron(ascii.win, COLOR_PAIR(1) | A_BOLD);	
+		mvwprintw(ascii.win, r, ac, "%c", a_char);
+		if (chg) wattroff(ascii.win,COLOR_PAIR(1) |  A_BOLD);
+		offset++;			
 	}
+	
 	box(hex.border, 0, 0);
 	wnoutrefresh(hex.border);
 	wnoutrefresh(hex.win);
-}
 
-void refresh_ascii() {
-///////////// CHECK E_REFRESH FOR CHANGE HANDLING
-	int ar=0, ac=0, i=0; 
-	
-	while(i<hex.grid){
-		// print as much as a row as we can
-		while ((i < hex.grid) && (ac < ascii.width)){
-			mvwprintw(ascii.win, ar, ac, "%c", byte_to_ascii(app.map[hex.v_start + i]));
-			ac++;
-			i++;
-		}
-		ac = 0;
-		ar++;
-	}
 	box(ascii.border, 0, 0);
 	wnoutrefresh(ascii.border);
 	wnoutrefresh(ascii.win);
@@ -153,8 +152,7 @@ void refresh_ascii() {
 void update_all_windows() {
 	if (!app.too_small){	
 		// refresh content
-		refresh_hex();
-		refresh_ascii();
+		refresh_grids();
 		update_cursor();  // this does a doupdate();
 	}
 }
@@ -165,13 +163,13 @@ void update_cursor(){
 	refresh_status();
 	// move the cursor
 	if (app.in_hex) {
-//		wnoutrefresh(ascii.win);	
 		wmove(hex.win, hex.cur_row, hex.cur_col);
 		wnoutrefresh(hex.win);
 	} else {
-//		wnoutrefresh(hex.win);	
 		wmove(ascii.win, hex.cur_row, hex.cur_digit);
 		wnoutrefresh(ascii.win);	
 	}
 	doupdate(); 
 }
+
+

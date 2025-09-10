@@ -12,8 +12,6 @@ void handle_edit_keys(int k);
 
 void k_left();
 void k_right();
-void k_up();
-void k_down();
 
 
 #endif
