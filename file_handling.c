@@ -25,7 +25,7 @@ bool open_file(int argc, char *argv[])
 	}
 
 	// check file not empty
-	if (app.fs.st_size < 10) {
+	if (app.fs.st_size < 1) {
 		close(app.fd);
 		return false;	
 	} else {
@@ -58,7 +58,7 @@ int cmp_key(const void *a, const void *b) {
     const kv_t *pb = (const kv_t*)b;
     return pa->key - pb->key;
 }
-
+ 
 
 void save_changes(){
 	if (kh_size(app.edmap) == 0)
@@ -67,7 +67,9 @@ void save_changes(){
 	else if(popup_question("Are you sure you want to save changes?",
 			"This action can not be undone (y/n)", PTYPE_YN)){
 	
-		// save changes 
+        // I FORGOT TO SORRT TJHE CHANGES !!
+        
+		// save changes
 		for (slot = kh_begin(app.edmap); slot != kh_end(app.edmap); slot++) {
 			if (kh_exist(app.edmap, slot)) {
 /*			size_t i = kh_key(app.edmap, slot);
@@ -79,11 +81,12 @@ void save_changes(){
             app.map[kh_key(app.edmap, slot)] = kh_val(app.edmap, slot);
 			}
 		}
-		
 		// and sync it out
 		msync(app.map, app.fsize, MS_SYNC);
 		// clear change history as these are now permanent
 		kh_clear(charmap, app.edmap);
+        
+        
 		// refresh to get rid of old change highlights
 		update_all_windows();
 		handle_global_keys(KEY_REFRESH);

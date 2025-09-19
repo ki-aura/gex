@@ -31,25 +31,26 @@ void handle_click(clickwin win, int row, int col){
 /*
 
 
-
-
-
-
-
-				bugs
-				- you can't change both nibbles as i only check against the file. i need
-				to check for a change first and them update the change 
-				maybe the logic to simplify it is if change, update that change, then do 
-				the compare against file and if matches delete the change
-
-
 				next steps
 				- implement backspace
 				- implement a first / next / prev change search - will need to qsort the 
 					changes into an array see khash demo code for qsort
 				- add insert/delete
 
-
+ Functions you’ll likely need
+ Initialization → create the tree instance.
+ Insert → add an edit at a file offset (replaces if already exists).
+ Find → retrieve the edit by offset.
+ Erase → remove edit by offset.
+ Iterator (begin/next/end) → walk through edits in order.
+ Destroy → free memory.
+ 
+ nsert / Delete bytes in file
+ When you insert bytes at offset pos:
+ All edits with key >= pos must shift by +N.
+ When you delete N bytes starting at pos:
+ All edits with pos <= key < pos+N must be deleted.
+ All edits with key >= pos+N must shift by -N.
 								
 					
 
@@ -246,7 +247,7 @@ void handle_edit_keys(int k){
     idx = row_digit_to_offset(hex.cur_row, hex.cur_digit);
     
     // first off... if we're not within the bounds of the file then no edits
-    if(hex.v_start + idx > app.fsize) return;
+    if(hex.v_start + idx >= app.fsize) return;
     
     if (!app.in_hex) { // we're in ascii pane
         if (isprint(k)) {

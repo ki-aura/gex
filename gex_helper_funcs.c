@@ -121,7 +121,7 @@ char byte_to_ascii(unsigned char b) {
 // MAIN SCREEN CONVERSION FUNCTIONS //
 
 bool file_offset_to_rc(int byte_offset, int *row, int *h_col, int *a_col){
-	if((hex.v_start + byte_offset) > app.fsize) return false;
+	if((hex.v_start + byte_offset) >= app.fsize) return false;  // >= as offset is zero based so must be 1 less than size
 	*row = byte_offset / ascii.width;
 	*a_col = byte_offset - (ascii.width * (*row));
 	*h_col = (*a_col) * 3;
