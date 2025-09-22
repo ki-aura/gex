@@ -122,8 +122,6 @@ void abandon_changes(){
 }
 
 
-#define COPY_BUF_SIZE 65536  // 64 KB buffer
-
 // helper: build temp filename "<fname>.gex"
 static char *make_temp_name(const char *fname) {
     size_t len = strlen(fname) + 5;
@@ -135,6 +133,7 @@ static char *make_temp_name(const char *fname) {
 
 // portable copy from fd src to fd dst for count bytes
 static int copy_bytes(int dst, int src, off_t count) {
+	int COPY_BUF_SIZE=65536;
     char buf[COPY_BUF_SIZE];
     while (count > 0) {
         ssize_t to_read = count < COPY_BUF_SIZE ? count : COPY_BUF_SIZE;

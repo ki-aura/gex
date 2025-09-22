@@ -173,6 +173,5 @@ extern MEVENT event;
 #include "keyb_man.h"
 #include "win_man.h"
 #include "file_handling.h"
-#include "edit_mode.h"
 
 #endif
