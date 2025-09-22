@@ -9,21 +9,33 @@ void handle_click(clickwin win, int row, int col){
 		// this so far only handles full panes
 		app.in_hex = true;
 		hex.cur_row = row;
-		hex.cur_digit = col/3;
-		hex.cur_col = col; 
-		// move back 1 if we clicked on a space in the grid
-		if((hex.cur_col%3)==2)hex.cur_col--;
-		// work out which nibble we're on
-		if((hex.cur_col%3)==0)hex.is_hinib=true; else hex.is_hinib=false;
+		if(col==0){
+			hex.cur_digit = 0;
+			hex.cur_col   = 0;
+			hex.is_hinib  = true;
+		} else {
+			hex.cur_digit = col/3;
+			hex.cur_col = col; 
+			// move back 1 if we clicked on a space in the grid
+			if((hex.cur_col%3)==2)hex.cur_col--;
+			// work out which nibble we're on
+			if((hex.cur_col%3)==0)hex.is_hinib=true; else hex.is_hinib=false;
+		}
 	}
 	
 	if(win == WIN_ASCII){
 		// this so far only handles full panes
 		app.in_hex = false;
 		hex.cur_row = row;
-		hex.cur_digit = col;
-		hex.cur_col = (col *3);		
-		hex.is_hinib=true;
+		if(col==0){
+			hex.cur_digit = 0;
+			hex.cur_col   = 0;
+			hex.is_hinib  = true;
+		} else {
+			hex.cur_digit = col;
+			hex.cur_col = (col *3);		
+			hex.is_hinib=true;
+		}
 //snprintf(tmp,200,"(A) col %d digit %d row %d HiNib %d",hex.cur_col, hex.cur_digit, row, (int)hex.is_hinib); popup_question(tmp, "", PTYPE_CONTINUE);
 	}
 	return;
@@ -31,8 +43,8 @@ void handle_click(clickwin win, int row, int col){
 /*
 
 
+
 				next steps
-				- implement backspace
 				- implement a first / next / prev change search - will need to qsort the 
 					changes into an array see khash demo code for qsort
 				- add insert/delete
@@ -53,13 +65,6 @@ void handle_click(clickwin win, int row, int col){
  All edits with key >= pos+N must shift by -N.
 								
 					
-
-
-
-
-
-
-
 
 
 */
@@ -129,6 +134,7 @@ void k_right(){
 
 void handle_in_screen_movement(int k){
 app.lastkey = k;
+int idx;
 
 	switch (k){
 	case KEY_TAB:
@@ -146,10 +152,16 @@ app.lastkey = k;
 	case KEY_LEFT:
 		// do key left
 		k_left();
-		// maybe undo
+		// if we're not on a high-nibble, then move left again
+		if(!hex.is_hinib) k_left();
+		// maybe delete (i.e. undo)
 		if(k != KEY_LEFT){
-			// check hash table - if there, delete it
-			// update windows as highlights may have changed
+			// find out where we are; check if there's an edit; if so delete it
+			idx = row_digit_to_offset(hex.cur_row, hex.cur_digit);
+			slot = kh_get(charmap, app.edmap, (size_t)(hex.v_start + idx));
+            if (slot != kh_end(app.edmap)) // we have an edit; get rid of it
+                    kh_del(charmap, app.edmap, slot);
+			// update windows as highlights will  have changed
 			update_all_windows();
 		}
 		break;

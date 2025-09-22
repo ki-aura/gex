@@ -1,6 +1,5 @@
 #include "gex.h"
 #include "file_handling.h"
-#include "view_mode.h"
 #include "edit_mode.h"
 
 // Global variables
@@ -158,7 +157,7 @@ clickwin get_window_click(MEVENT *event, int *row, int *col)
     if (mr >= win_rs && mr < win_rs + win_re &&
         mc >= win_cs && mc < win_cs + win_ce) { 
         *row = mr - win_rs;			
-        *col = mc - win_cs;
+        *col = (mc - win_cs);
         return WIN_HEX;
     }
 
@@ -169,7 +168,7 @@ clickwin get_window_click(MEVENT *event, int *row, int *col)
     if (mr >= win_rs && mr < win_rs + win_re &&
         mc >= win_cs && mc < win_cs + win_ce) { 
         *row = mr - win_rs;			
-        *col = mc - win_cs;
+        *col = (mc - win_cs);
         return WIN_ASCII;
     }
 

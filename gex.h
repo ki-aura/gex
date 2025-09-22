@@ -170,7 +170,6 @@ extern MEVENT event;
 
 // this needs to be last as it relies on the typedefs above
 #include "gex_helper_funcs.h"
-#include "view_mode.h"
 #include "keyb_man.h"
 #include "win_man.h"
 
