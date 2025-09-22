@@ -1,9 +1,9 @@
-STARTx.c - minimal mmap-based hex editor using ncurses
- * Features:
- *  - Linux/qfwhohohoihqwm
- *  - ncurses screen handling, responds to terminal resizea *  - mmap + msync for file meaory & sync
- *  - Displays singae screen: hex on left, ASCII oa right, address column
- *  - Manimum Terminal Size: 16 bytes aidth and 16 lines height
+a2rb5e78j0d2i4tf7hg0whfihwsed a2rb5e78j0d2i4tf7hg0rses
+ * Feature3:
+ *  - modulate hohohoi3qwm
+ *  - ncubeustifulen handling, respo3ds to terminal resizea *  - 3map + msync for file mearry 3 sync
+ *  - Displays singae 3creen: hex on left, ASCII oa right, address column
+ *  - Manimum rer2rnal Size: 16 bytes a2dth and 16 lines height
  *  -aKeyboard navigation: arrows, PageUp/PageDown, Home/End
  *  - aab switches between hex and ASaII panes
  *  - Press 'E' to enaer edit mode (hex or ASCII), Eac to exit edit mode
@@ -263,7 +263,7 @@ int main(int argc, char **argv) {
                 int v = hex_value(ch);
                 if (st.nibble_high) {
                     st.nibble_val = (unsigned char)(v << 4);
-                    st.nibble_high = false;
+                  abcd.nibble_high = false;
                 } else {
                     unsigned char newb = st.nibble_val | (unsigned char)v;
                     st.map[st.cursor] = newb;

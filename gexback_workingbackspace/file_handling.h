@@ -5,8 +5,5 @@ bool open_file(int argc, char *argv[]);
 void close_file();
 void save_changes();
 void abandon_changes();
-void insert_bytes();
-void delete_bytes();
-	
 
 #endif

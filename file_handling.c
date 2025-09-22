@@ -1,19 +1,8 @@
 #include "gex.h"
-#include "file_handling.h"
 
-bool open_file(int argc, char *argv[])
-{
-
-	// check we have a file name
-	if (argc != 2) {
-	fputs("Usage: %s <file>\n", stderr);
-		return false;
-	} else {
-		app.fname = argv[1];
-	}
-
+bool helperfunction_open_file(){
 	// try to open it
-	app.fd = open(argv[1], O_RDWR);
+	app.fd = open(app.fname, O_RDWR);
 	if (app.fd < 0) {
 		return false;
 	}
@@ -41,6 +30,21 @@ bool open_file(int argc, char *argv[])
 	return true;
 }
 
+bool open_file(int argc, char *argv[])
+{
+
+	// check we have a file name
+	if (argc != 2) {
+	fputs("Usage: %s <file>\n", stderr);
+		return false;
+	} else {
+		app.fname = argv[1];
+		return helperfunction_open_file();
+	}
+
+
+}
+
 void close_file()
 {
 	munmap(app.map, app.fsize);
@@ -49,17 +53,18 @@ void close_file()
 
 // Comparison for qsort: by int key
 typedef struct {
-	int key; 
-	char val; 
+	unsigned long key;
+	unsigned char val; 
 } kv_t;
 
 int cmp_key(const void *a, const void *b) {
     const kv_t *pa = (const kv_t*)a;
     const kv_t *pb = (const kv_t*)b;
-    return pa->key - pb->key;
+    if (pa->key < pb->key) return -1;
+    if (pa->key > pb->key) return 1;
+    return 0;
 }
  
-
 void save_changes(){
 	if (kh_size(app.edmap) == 0)
 		popup_question("No changes made",
@@ -67,25 +72,33 @@ void save_changes(){
 	else if(popup_question("Are you sure you want to save changes?",
 			"This action can not be undone (y/n)", PTYPE_YN)){
 	
-        // I FORGOT TO SORRT TJHE CHANGES !!
-        
-		// save changes
+		// Allocate array to hold all kv pairs
+		size_t n = kh_size(app.edmap);
+		kv_t *arr = malloc(sizeof(kv_t) * n);
+	
+		// Copy hash table entries into array
+		size_t idx = 0;
 		for (slot = kh_begin(app.edmap); slot != kh_end(app.edmap); slot++) {
 			if (kh_exist(app.edmap, slot)) {
-/*			size_t i = kh_key(app.edmap, slot);
-                int v = kh_val(app.edmap, slot);
-			
-			snprintf(tmp,40,"o: %lu b: %i",i, v);
-			popup_question(tmp, "", PTYPE_CONTINUE);
- */
-            app.map[kh_key(app.edmap, slot)] = kh_val(app.edmap, slot);
+				arr[idx].key = kh_key(app.edmap, slot);
+				arr[idx].val = kh_val(app.edmap, slot);
+				idx++;
 			}
 		}
+	
+		// Sort array by key
+		qsort(arr, n, sizeof(kv_t), cmp_key);
+	
+		// Apply changes in sorted order
+		for (size_t i = 0; i < n; i++) {
+			app.map[arr[i].key] = arr[i].val;
+		}
+
 		// and sync it out
 		msync(app.map, app.fsize, MS_SYNC);
 		// clear change history as these are now permanent
 		kh_clear(charmap, app.edmap);
-        
+        free(arr);
         
 		// refresh to get rid of old change highlights
 		update_all_windows();
@@ -108,6 +121,194 @@ void abandon_changes(){
     }
 }
 
+
+#define COPY_BUF_SIZE 65536  // 64 KB buffer
+
+// helper: build temp filename "<fname>.gex"
+static char *make_temp_name(const char *fname) {
+    size_t len = strlen(fname) + 5;
+    char *tmp = malloc(len);
+    if (!tmp) return NULL;
+    snprintf(tmp, len, "%s.gex", fname);
+    return tmp;
+}
+
+// portable copy from fd src to fd dst for count bytes
+static int copy_bytes(int dst, int src, off_t count) {
+    char buf[COPY_BUF_SIZE];
+    while (count > 0) {
+        ssize_t to_read = count < COPY_BUF_SIZE ? count : COPY_BUF_SIZE;
+        ssize_t n = read(src, buf, to_read);
+        if (n <= 0) return -1; // error or unexpected EOF
+        if (write(dst, buf, n) != n) return -1;
+        count -= n;
+    }
+    return 0;
+}
+
+// Insert nbytes of zeros after f_offset
+int file_insert(off_t f_offset, size_t nbytes) {
+    int ret = -1;
+    char *tmpname = make_temp_name(app.fname);
+    if (!tmpname) return -1;
+
+    // unmap original file
+    if (app.map) {
+        munmap(app.map, app.fsize);
+        app.map = NULL;
+    }
+
+    int tfd = open(tmpname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (tfd < 0) goto out_free;
+
+    // copy head
+    if (lseek(app.fd, 0, SEEK_SET) < 0) goto out_close;
+    if (f_offset > 0) {
+        if (copy_bytes(tfd, app.fd, f_offset) < 0) goto out_close;
+    }
+
+    // write inserted bytes
+    char *zeros = calloc(1, nbytes);
+    if (!zeros) goto out_close;
+    if (write(tfd, zeros, nbytes) != (ssize_t)nbytes) { free(zeros); goto out_close; }
+    free(zeros);
+
+    // copy tail
+    off_t tail = app.fsize - f_offset;
+    if (tail > 0) {
+        if (copy_bytes(tfd, app.fd, tail) < 0) goto out_close;
+    }
+
+    ret = 0;
+
+out_close:
+    close(tfd);
+    if (ret == 0) {
+        close(app.fd);
+        if (rename(tmpname, app.fname) == 0) {
+            app.fd = open(app.fname, O_RDWR);
+            if (app.fd >= 0) {
+                struct stat st;
+                if (fstat(app.fd, &st) == 0)
+                    app.fsize = st.st_size;
+                else ret = -1;
+            } else ret = -1;
+        } else ret = -1;
+    } else {
+        unlink(tmpname);
+    }
+
+out_free:
+    free(tmpname);
+    return ret;
+}
+
+// Delete nbytes after f_offset
+int file_delete(off_t f_offset, size_t nbytes) {
+    int ret = -1;
+    char *tmpname = make_temp_name(app.fname);
+    if (!tmpname) return -1;
+
+    // unmap original file
+    if (app.map) {
+        munmap(app.map, app.fsize);
+        app.map = NULL;
+    }
+
+    int tfd = open(tmpname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (tfd < 0) goto out_free;
+
+    // copy head
+    if (lseek(app.fd, 0, SEEK_SET) < 0) goto out_close;
+    if (f_offset > 0) {
+        if (copy_bytes(tfd, app.fd, f_offset) < 0) goto out_close;
+    }
+
+    // skip nbytes in source
+    if (lseek(app.fd, f_offset + nbytes, SEEK_SET) < 0) goto out_close;
+
+    // copy tail
+    off_t tail = app.fsize - (f_offset + nbytes);
+    if (tail > 0) {
+        if (copy_bytes(tfd, app.fd, tail) < 0) goto out_close;
+    }
+
+    ret = 0;
+
+out_close:
+    close(tfd);
+    if (ret == 0) {
+        close(app.fd);
+        if (rename(tmpname, app.fname) == 0) {
+            app.fd = open(app.fname, O_RDWR);
+            if (app.fd >= 0) {
+                struct stat st;
+                if (fstat(app.fd, &st) == 0)
+                    app.fsize = st.st_size;
+                else ret = -1;
+            } else ret = -1;
+        } else ret = -1;
+    } else {
+        unlink(tmpname);
+    }
+
+out_free:
+    free(tmpname);
+    return ret;
+}
+
+
+
+void insert_bytes(){
+unsigned long byteins, ins_offset;
+    if (kh_size(app.edmap) > 0)
+        popup_question("Save changes before inserting bytes",
+            "Press any key to continue", PTYPE_CONTINUE);
+    else {
+    	ins_offset = cursor_full_file_offset();
+    	// tell where insert will be, get number of bytes to insert, warn 
+    	snprintf(tmp, 250, "How Many Bytes to INSERT AT offset %lu? (max 1024)",ins_offset) ;
+        // hex.v_start = will either be a new valid value or 0
+        byteins = popup_question(tmp, "", PTYPE_UNSIGNED_LONG);
+		if(byteins>1024) byteins=1024;
+		if(byteins<=0) return;
+
+    	// close file, create new file, rename, open new file
+		file_insert(ins_offset, byteins);
+		helperfunction_open_file();
+    	// and refresh
+    	create_windows();
+    }
+}
+
+void delete_bytes(){
+unsigned long bytedel, del_offset;
+    if (kh_size(app.edmap) > 0)
+        popup_question("Save changes before deleting bytes",
+            "Press any key to continue", PTYPE_CONTINUE);
+    else {
+    	// tell where insert will be, get number of bytes to insert, warn 
+    	del_offset = cursor_full_file_offset();
+    	snprintf(tmp, 250, "How Many Bytes to DELETE FROM offset %lu? (max 1024)", del_offset);
+        // hex.v_start = will either be a new valid value or 0
+        bytedel = popup_question(tmp, "", PTYPE_UNSIGNED_LONG);
+        // sense checks
+		if(bytedel>1024) bytedel=1024;
+		if(bytedel<=0) return;
+		// check we're not trying to delete past end of file
+		if(del_offset + bytedel >= app.fsize) bytedel = app.fsize - del_offset;
+		
+//    	snprintf(tmp, 250, "deleting %lu from %s", bytedel, app.fname);
+//		popup_question(tmp, "", PTYPE_CONTINUE);
+
+    	// close file, create new file, rename, open new file
+    	file_delete(del_offset, bytedel);
+    	helperfunction_open_file();
+    	
+    	// and refresh
+    	create_windows();
+    }
+}
 
 
 

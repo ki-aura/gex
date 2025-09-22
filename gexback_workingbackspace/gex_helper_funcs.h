@@ -38,7 +38,6 @@ bool file_offset_to_rc(int byte_offset, int *row, int *h_col, int *a_col);
 // convert r/c to offset
 int row_digit_to_offset(int row, int digit);
 
-unsigned long cursor_full_file_offset();
 
 #endif 
 

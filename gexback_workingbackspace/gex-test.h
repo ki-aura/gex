@@ -17,7 +17,6 @@
 #include <limits.h>
 #include <signal.h>
 #include <menu.h>
-#include <assert.h>
 #include "khash.h"
 
 
@@ -36,6 +35,13 @@ typedef enum {
 	PTYPE_CONTINUE,
 	PTYPE_UNSIGNED_LONG,
 } popup_types;
+
+typedef enum {
+    EDIT_MODE, 
+    INSERT_MODE,
+    DELETE_MODE,
+    VIEW_MODE, 
+} app_mode;
 
 typedef enum {
 	WIN_HEX,
@@ -90,13 +96,13 @@ typedef struct {
 	bool too_small; 	// less than 2 hex rows and 16 hex chars wide
 	// general 
 	bool in_hex;		// track which pane we're in during edit
+	app_mode mode;		// view, edit etc
 	// file & mem handling
 	size_t fsize;		// file size
 	char *fname;		// file name
 	unsigned char *map;  	// mmap base
 	int fd;			// file descriptor
 	struct stat fs;		// file stat
-	int lastkey; 	// debug use
 	// hash table for file updates
 	khash_t(charmap) *edmap;
 } appdef;
@@ -104,15 +110,20 @@ typedef struct {
 
 // Window definitions
 typedef struct {
-	WINDOW *border;
 	WINDOW *win;
-	int height;	// grid height excluding border
-	int width;	// grid width excluding border
-	int grid;	// grid size in total hex / ascii digits (portion of file)
+	PANEL *pan;
+	int height;	// grid height including border
+	int width;	// grid width including border
+	int digits;	// grid width in hex digits (i.e. 3 chars / digit)
+	int rows;	// grid height excluding border
+	int grid;	// grid size in total hex digits (portion of file)
 	// file handling and viewing
 	unsigned long v_start;	// file offset location of start of grid
 	unsigned long v_end;	// file location of end of grid
-
+	char *gc;	// viewable grid contents
+	// buffers for edit and cursor tracker variables
+	char *gc_copy;	// copy of viewable grid contents
+	unsigned char *map_copy; 	// copy of map that relates to the screen
 	int map_copy_len;
 	int max_row;	// this is the max row we can edit if screen > file size
 	int max_col; 	// this is the max col on the max row we can edit if screen > file size
@@ -120,37 +131,57 @@ typedef struct {
 	int cur_row;	// cursor location (i.e. where to show it rather than where it is)
 	int cur_col;
 	int cur_digit;	// which hex digit (hinib lownib space) the cursor is on
-	bool is_hinib;	// are we on the hi (left) nibble
+	bool is_hinib;	// are we on the left nibble (hi nibble)
 } hex_windef;
 
 typedef struct {
-	WINDOW *border;
 	WINDOW *win;
+	PANEL *pan;
 	int height;
 	int width;
+	char *gc;
+	// don't need digits, grid or v_start/v_end as same as hex
+	// buffers for edit
+	char *gc_copy;
+	// don't need cur_row or cur_col as same as hex.row and ascii.width
 } ascii_windef;
 
 typedef struct {
 	int height;
 	int width;
-	WINDOW *border;
 	WINDOW *win;
+	PANEL *pan;
 } status_windef;
 
 typedef struct {
 	int height;
 	int width;
-	WINDOW *border;
 	WINDOW *win;
-	char *helpmsg;
+	PANEL *pan;
 } helper_windef;
 
 
+// helper functions
+unsigned long popup_question(const char *qline1, const char *qline2, popup_types pt);
+void byte_to_hex(unsigned char b, char *out);
+char byte_to_ascii(unsigned char b);
+int hex_char_to_value(char c);
+unsigned char hex_to_byte(char high, char low);
+inline unsigned char char_to_hexval(char c);
+inline unsigned char nib_to_hex(char hi, char lo);
+inline void hex_to_nib(unsigned char byte, char *hi, char *lo);
+
+//void DP(const char *msg);
+
+// main loop
 void handle_global_keys(int k);
-bool initial_setup(int argc, char *argv[]);
+void initial_setup();
 void final_close(int signum);
+void refresh_helper(char *helpmsg);
+void refresh_status();
 clickwin get_window_click(MEVENT *event, int *row, int *col);
-bool create_main_menu();
+void zupdate_windows();
+
 
 
 extern appdef app;
@@ -158,21 +189,12 @@ extern status_windef status;
 extern helper_windef helper;
 extern hex_windef hex;
 extern ascii_windef ascii;
+extern char app_mode_desc[][10];
 extern char *tmp;// makes debug panel usage easier
 extern khiter_t slot; // general hash usage
 extern int khret;
 extern MEVENT event;
 
 // snprintf(tmp, 200, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
-
-
-
-
-// this needs to be last as it relies on the typedefs above
-#include "gex_helper_funcs.h"
-#include "keyb_man.h"
-#include "win_man.h"
-#include "file_handling.h"
-#include "edit_mode.h"
 
 #endif

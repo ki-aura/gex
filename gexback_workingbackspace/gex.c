@@ -1,4 +1,6 @@
 #include "gex.h"
+#include "file_handling.h"
+#include "edit_mode.h"
 
 // Global variables
 status_windef status = {.win = NULL, .border = NULL};
@@ -10,8 +12,6 @@ khiter_t slot;
 int khret; // return value from kh_put calls - says if already exists
 MEVENT event;
 char *tmp = NULL;
-
-
 
 ///////////////////////////////////////////////////
 // startup and close down
@@ -312,11 +312,11 @@ gotobyte:
 	goto cleanup;
 
 insert:
-	insert_bytes();
+
 	goto cleanup;
 
 delete:
-	delete_bytes();
+
 	goto cleanup;
 
 cleanup:

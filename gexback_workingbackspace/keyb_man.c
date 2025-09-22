@@ -152,10 +152,10 @@ int idx;
 	case KEY_LEFT:
 		// do key left
 		k_left();
+		// if we're not on a high-nibble, then move left again
+		if(!hex.is_hinib) k_left();
 		// maybe delete (i.e. undo)
 		if(k != KEY_LEFT){
-			// if we're not on a high-nibble, then move left again
-			if(!hex.is_hinib) k_left();
 			// find out where we are; check if there's an edit; if so delete it
 			idx = row_digit_to_offset(hex.cur_row, hex.cur_digit);
 			slot = kh_get(charmap, app.edmap, (size_t)(hex.v_start + idx));
@@ -235,12 +235,12 @@ void handle_scrolling_movement(int k){
 	
 	// GOTO event
 	case KEY_MOVE: // this is what the goto function will throw
-        snprintf(tmp, 60, "Goto Byte? (0-%lu)", (unsigned long)app.fsize-1);
+        snprintf(tmp, 60, "Goto Byte? (0-%lu)", (unsigned long)app.fsize);
         // hex.v_start = will either be a new valid value or 0
         hex.v_start = popup_question(tmp, "", PTYPE_UNSIGNED_LONG);
 		// BOUNDARY CHECKS 
 		//if there's not enough file to fill the grid, stay put
-		if((size_t)hex.grid >= app.fsize) hex.v_start = 0;
+		if((size_t)hex.grid > app.fsize) hex.v_start = 0;
 		// otherwise check result
 		else if((hex.v_start + hex.grid) > app.fsize) 
 			hex.v_start = app.fsize - hex.grid;
