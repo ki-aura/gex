@@ -272,41 +272,48 @@ unsigned long byteins, ins_offset;
         byteins = popup_question(tmp, "", PTYPE_UNSIGNED_LONG);
 		if(byteins>1024) byteins=1024;
 		if(byteins<=0) return;
-
-    	// close file, create new file, rename, open new file
-		file_insert(ins_offset, byteins);
-		helperfunction_open_file();
-    	// and refresh
-    	create_windows();
+        
+    	snprintf(tmp, 250, "Confirm: Insert %lu Bytes?",byteins) ;        
+        if( popup_question(tmp, "This Action Can NOT Be Undone (y/n)", PTYPE_YN)) {
+			// close file, create new file, rename, open new file
+			file_insert(ins_offset, byteins);
+			helperfunction_open_file();
+			// and refresh
+			create_windows();
+        }
     }
 }
 
 void delete_bytes(){
-unsigned long bytedel, del_offset;
+unsigned long bytedel, del_offset, max_pos;
     if (kh_size(app.edmap) > 0)
         popup_question("Save changes before deleting bytes",
             "Press any key to continue", PTYPE_CONTINUE);
     else {
-    	// tell where insert will be, get number of bytes to insert, warn 
+    	// tell where insert will be, get number of bytes to insert,
     	del_offset = cursor_full_file_offset();
-    	snprintf(tmp, 250, "How Many Bytes to DELETE FROM offset %lu? (max 1024)", del_offset);
-        // hex.v_start = will either be a new valid value or 0
+		// check we're not trying to delete past end of file
+    	max_pos = app.fsize - del_offset;
+    	max_pos = max_pos <= 1024 ? max_pos : 1024;
+    	
+		// find how many bytes to delete
+    	snprintf(tmp, 250, "How Many Bytes to DELETE FROM offset %lu? (max %d)", del_offset, (int)max_pos);
         bytedel = popup_question(tmp, "", PTYPE_UNSIGNED_LONG);
         // sense checks
-		if(bytedel>1024) bytedel=1024;
+		if(bytedel>max_pos) bytedel=max_pos;
 		if(bytedel<=0) return;
-		// check we're not trying to delete past end of file
-		if(del_offset + bytedel >= app.fsize) bytedel = app.fsize - del_offset;
 		
-//    	snprintf(tmp, 250, "deleting %lu from %s", bytedel, app.fname);
-//		popup_question(tmp, "", PTYPE_CONTINUE);
-
-    	// close file, create new file, rename, open new file
-    	file_delete(del_offset, bytedel);
-    	helperfunction_open_file();
-    	
-    	// and refresh
-    	create_windows();
+    	snprintf(tmp, 250, "Confirm: Delete %lu Bytes?",bytedel) ;        
+        if( popup_question(tmp, "This Action Can NOT Be Undone (y/n)", PTYPE_YN)) {
+			// close file, create new file, rename, open new file
+			file_delete(del_offset, bytedel);
+			
+			// We only want to open the file if it's still > 1 byte; otherwise exit 
+			if (helperfunction_open_file()) 			
+				create_windows();
+			else 
+				final_close(0);
+    	}
     }
 }
 

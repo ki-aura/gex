@@ -88,6 +88,8 @@ void final_close(int signum)
 	if (signum == SIGTERM){
 		fputs("Programme Killed\n", stderr);
 		exit(EXIT_FAILURE);}
+		
+	exit(0);
 }
 
 void handle_global_keys(int k) {

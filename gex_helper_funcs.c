@@ -6,7 +6,7 @@ unsigned long  popup_question(const char *qline1, const char *qline2, popup_type
 	unsigned long answer;
 
 	// make sure we size to the longer of the question lines (and at least 21 so a 20byte long can be typed)
-	qlen = (strlen(qline1) > strlen(qline2)) ? strlen(qline1) : strlen(qline2);
+	qlen = (int)((strlen(qline1) > strlen(qline2)) ? strlen(qline1) : strlen(qline2));
 	qlen = (qlen < 21) ? 21 : qlen;
 	// Create window and panel
 	WINDOW *popup = newwin(4, (qlen+2), ((app.rows - 4) / 2), 
