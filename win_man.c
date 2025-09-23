@@ -83,7 +83,7 @@ if (ascii.border != NULL) {delwin(ascii.border); ascii.border = NULL; }
 }
 
 void refresh_status() {
-	mvwprintw(status.win, 0, 0, "GEX 1.3 [%s] Cursor Offset: %lu             ", app.fname, cursor_full_file_offset());
+	mvwprintw(status.win, 0, 0, "GEX 1.3.1 [%s] Cursor Offset: %lu             ", app.fname, cursor_full_file_offset());
 	mvwprintw(status.win, 1, 0, "Fsize %lu offset %lu-%lu Screen: %dr %dc grid %dx%d=%d           ", 
 			app.fsize, hex.v_start, hex.v_start+hex.grid-1, app.rows, app.cols, ascii.width, hex.height, hex.grid);
 	box(status.border, 0, 0);
