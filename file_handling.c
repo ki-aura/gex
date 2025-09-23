@@ -37,11 +37,13 @@ bool open_file(int argc, char *argv[])
 	if (argc != 2) {
 		putp(tigetstr("rmcup"));
 		endwin();
-		fputs("Usage:\ngex <file name>\ngex --help\n", stderr);
+		fputs(	"Usage:\n"
+				"  gex <file name>\n"
+				"  gex -v or --version\n", stderr);
 		return false;
 	} else {
 		app.fname = argv[1];
-		if (strcmp(app.fname,"--help")==0) {
+		if (strcmp(app.fname,"--version")==0 || strcmp(app.fname,"-v")==0 ) {
 			putp(tigetstr("rmcup"));
 			endwin();
             snprintf(tmp, 40, "Version %s\n", GEX_VERSION);

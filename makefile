@@ -22,7 +22,7 @@ else
     NCURSES_FLAGS = -I$(NCURSES_PREFIX)/include -L$(NCURSES_PREFIX)/lib -lncurses -lpanel
 endif
 
-.PHONY: all clean release
+.PHONY: all clean release tidy
 
 # Default target
 all: release
@@ -30,6 +30,12 @@ all: release
 # Release build
 release: CFLAGS = $(CFLAGS_COMMON)
 release: $(TARGET)
+
+tidy:
+	xcrun clang-tidy $(SRC) \
+		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*,-misc-include-cleaner' \
+		-- -Wall -Wextra
+
 
 # Build rules
 $(TARGET): $(OBJ)
