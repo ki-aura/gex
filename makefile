@@ -14,12 +14,12 @@ OBJ           = $(SRC:.c=.o)
 
 # NCURSES flags
 ifeq ($(UNAME_S),Darwin)
-    # macOS: use system ncurses, panel, menu
-    NCURSES_FLAGS = -lncurses -lpanel -lmenu
+    # macOS: use system ncurses, panel
+    NCURSES_FLAGS = -lncurses -lpanel
 else
     # Linux: use Homebrew's ncurses
     NCURSES_PREFIX := $(shell brew --prefix ncurses)
-    NCURSES_FLAGS = -I$(NCURSES_PREFIX)/include -L$(NCURSES_PREFIX)/lib -lncurses -lpanel -lmenu
+    NCURSES_FLAGS = -I$(NCURSES_PREFIX)/include -L$(NCURSES_PREFIX)/lib -lncurses -lpanel
 endif
 
 .PHONY: all clean release

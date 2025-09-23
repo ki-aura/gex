@@ -216,125 +216,104 @@ app.lastkey = ch;
 
 // menu functions
  
-
-// panel version
-bool create_main_menu()
+ bool create_main_menu()
 {
-    int mi = 6;
-    ITEM *items[mi+1]; // + null
-    MENU *menu;
-//    WINDOW *sub;
-    PANEL *menu_panel;
-    WINDOW *menu_win;
+    const char *items[] = {
+        "QUIT            (q)",
+        "SAVE_Changes    (s)",
+        "ABANDON_Changes (a)",
+        "GOTO_Byte       (g)",
+        "INSERT_Bytes    (i)",
+        "DELETE_Bytes    (d)"
+    };
+    int mi = sizeof(items)/sizeof(items[0]);
+    int highlight = 0;
+    int choice = -1;
     int c;
 
-
-    // Define items sequentially
-    items[0] = new_item("QUIT", "q");
-    items[1] = new_item("SAVE_Changes", "s");
-    items[2] = new_item("ABANDON_Changes", "a");
-    items[3] = new_item("GOTO_Byte", "g");
-    items[4] = new_item("INSERT_Bytes", "i");
-    items[5] = new_item("DELETE_Bytes", "d");
-    items[6] = NULL;  // terminator
-
-   menu = new_menu(items);
+    PANEL *menu_panel;
+    WINDOW *menu_win;
 
     int win_height = 10;
-    int win_width  = 40;
+    int win_width  = 30;
     int starty = (LINES - win_height) / 2;
     int startx = (COLS - win_width) / 2;
 
     menu_win = newwin(win_height, win_width, starty, startx);
     keypad(menu_win, TRUE);
 
-    // Attach menu to window
-    set_menu_win(menu, menu_win);
-    set_menu_sub(menu, derwin(menu_win, win_height - 4, win_width - 2, 3, 1));
-    
-    set_menu_mark(menu, " * ");
-
+    menu_panel = new_panel(menu_win);
     box(menu_win, 0, 0);
     mvwprintw(menu_win, 1, 1, "Use arrows, Enter, ESC");
 
-    post_menu(menu);
-    menu_panel = new_panel(menu_win);
+    // Draw menu items
+    for (int i = 0; i < mi; i++) {
+        if (i == highlight)
+            wattron(menu_win, A_REVERSE);
+        mvwprintw(menu_win, 3 + i, 2, "%s", items[i]);
+        wattroff(menu_win, A_REVERSE);
+    }
+
     update_panels();
     doupdate();
 
     while ((c = wgetch(menu_win)) != 27) { // ESC
         switch (c) {
             case KEY_DOWN:
-                menu_driver(menu, REQ_DOWN_ITEM);
+                highlight = (highlight + 1) % mi;
                 break;
             case KEY_UP:
-                menu_driver(menu, REQ_UP_ITEM);
+                highlight = (highlight - 1 + mi) % mi;
                 break;
-            case KEY_ESCAPE:
-            	goto cleanup;
-            	break;
-            case 10: { // Enter
-                ITEM *cur = current_item(menu);
-                const char *name = item_name(cur);
-                if (strcmp(name, item_name(items[0])) == 0) return TRUE; //quit
-                else if (strcmp(name, item_name(items[1])) == 0) goto save;
-                else if (strcmp(name, item_name(items[2])) == 0) goto abandon;
-                else if (strcmp(name, item_name(items[3])) == 0) goto gotobyte;
-                else if (strcmp(name, item_name(items[4])) == 0) goto insert;
-                else if (strcmp(name, item_name(items[5])) == 0) goto delete;
+            case 10: // Enter
+                choice = highlight;
                 break;
-            }
             case 'q': case 'Q':
-                return TRUE; //quit
+                choice = 0; // QUIT
+                break;
             case 's':
-              	goto save; break;
+                choice = 1; break;
             case 'a':
-              	goto abandon; break;
+                choice = 2; break;
             case 'g':
-              	goto gotobyte; break;
+                choice = 3; break;
             case 'i':
-              	goto insert; break;
+                choice = 4; break;
             case 'd':
-              	goto delete; break;
+                choice = 5; break;
         }
+
+        // Redraw menu with highlight
+        for (int i = 0; i < mi; i++) {
+            if (i == highlight)
+                wattron(menu_win, A_REVERSE);
+            else
+                wattroff(menu_win, A_REVERSE);
+            mvwprintw(menu_win, 3 + i, 2, "%-20s", items[i]);
+        }
+
         update_panels();
         doupdate();
+
+        if (choice != -1)
+            break;
     }
 
-//nothing selected
-goto cleanup;
-  
-save:
-	save_changes();
-	goto cleanup;
+    // Perform action
+    switch (choice) {
+        case 0: return TRUE; // QUIT
+        case 1: save_changes(); break;
+        case 2: abandon_changes(); break;
+        case 3: handle_scrolling_movement(KEY_MOVE); break;
+        case 4: insert_bytes(); break;
+        case 5: delete_bytes(); break;
+        default: break;
+    }
 
-abandon:
-    abandon_changes();
-	goto cleanup;
-
-gotobyte:
-	handle_scrolling_movement(KEY_MOVE);
-	goto cleanup;
-
-insert:
-	insert_bytes();
-	goto cleanup;
-
-delete:
-	delete_bytes();
-	goto cleanup;
-
-cleanup:
-    unpost_menu(menu);
-    free_menu(menu);
-    for (int i = 0; items[i]; i++) free_item(items[i]);
-
-    hide_panel(menu_panel);
     del_panel(menu_panel);
     delwin(menu_win);
-
     update_all_windows();
     handle_global_keys(KEY_RESIZE);
+
     return FALSE;
 }
-

@@ -16,7 +16,6 @@
 #include <stdint.h>
 #include <limits.h>
 #include <signal.h>
-#include <menu.h>
 #include <assert.h>
 #include "khash.h"
 
