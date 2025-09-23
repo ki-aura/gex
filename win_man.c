@@ -81,9 +81,9 @@ if (ascii.border != NULL) {delwin(ascii.border); ascii.border = NULL; }
 }
 
 void refresh_status() {
-	mvwprintw(status.win, 0, 0, "Fsize %lu offset %lu-%lu Screen: %dr %dc grid %dx%d=%d           ", 
+	mvwprintw(status.win, 0, 0, "GEX [%s] Cursor Offset: %lu             ", app.fname, cursor_full_file_offset());
+	mvwprintw(status.win, 1, 0, "Fsize %lu offset %lu-%lu Screen: %dr %dc grid %dx%d=%d           ", 
 			app.fsize, hex.v_start, hex.v_start+hex.grid-1, app.rows, app.cols, ascii.width, hex.height, hex.grid);
-	mvwprintw(status.win, 1, 0, "Cursor Offset: %lu           ", cursor_full_file_offset());
 	box(status.border, 0, 0);
 	wnoutrefresh(status.border);
 	wnoutrefresh(status.win);
@@ -94,9 +94,9 @@ void refresh_helper() {
 	memset(help_line, ' ', helper.width);
 	help_line[helper.width]='\0';
 	mvwprintw(helper.win, 0, 0, 
-			"Hex: cr %2d cc %2d cd %2d Hwin %d hinib %d h %2d aw %3d hw %3d lk %3d chgs %3d   ",
+			"cr %02d cc %02d cd %02d Hwin %d hinib %d lk %2lX lek %2lX chgs %03d      ",
 			hex.cur_row, hex.cur_col, hex.cur_digit, app.in_hex, hex.is_hinib, 
-			hex.height, ascii.width, hex.width, app.lastkey, kh_size(app.edmap));
+			app.lastkey, app.lasteditkey, kh_size(app.edmap));
 	mvwprintw(helper.win, 1, 0, "%s", help_line);   // blank it out
 	mvwprintw(helper.win, 1, 0, "%s", helper.helpmsg);     // and fill it new
 

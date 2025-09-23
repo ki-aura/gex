@@ -310,6 +310,7 @@ void handle_edit_keys(int k){
         }
     }
     if (valid_edit) {
+    	app.lasteditkey = k;
         update_all_windows();
         handle_in_screen_movement(KEY_RIGHT);
     }

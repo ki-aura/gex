@@ -32,6 +32,7 @@ bool initial_setup(int argc, char *argv[])
 	curs_set(2);		
 	keypad(stdscr, true); 	 // Enable function keys (like KEY_RESIZE )
 	set_escdelay(50);	 // speed up recognition of escape key - don't wait 1 sec for possible escape sequence
+	putp(tigetstr("smcup")); // use alternative buffer
 
 	// create edit map for edit changes and undos
 	app.edmap = kh_init(charmap);
@@ -49,6 +50,7 @@ bool initial_setup(int argc, char *argv[])
 	hex.cur_col=0;
 	hex.cur_digit=0;	// first hex digit (takes 3 spaces)
 	hex.is_hinib = true;	// left nibble of that digit
+	app.lasteditkey = 0;
 	
 	// show cursor
 	curs_set(2);
@@ -65,6 +67,7 @@ void final_close(int signum)
 	delete_windows();
 	clear();
 	refresh();
+	putp(tigetstr("rmcup"));
 	endwin();
 	
 	// free any globals

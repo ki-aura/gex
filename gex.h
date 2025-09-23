@@ -96,7 +96,8 @@ typedef struct {
 	unsigned char *map;  	// mmap base
 	int fd;			// file descriptor
 	struct stat fs;		// file stat
-	int lastkey; 	// debug use
+	int lastkey; 		// debug : last actual OR simulated key
+	int lasteditkey;	// debug : last key used in a byte edit
 	// hash table for file updates
 	khash_t(charmap) *edmap;
 } appdef;
