@@ -29,6 +29,8 @@ void size_windows() {
 // Function to create and resize all windows
 void create_windows() {
    // get sizes
+   resizeterm(0, 0); 
+   refresh();
    size_windows();
  
    // First, clear the entire screen to get rid of any artifacts
