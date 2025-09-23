@@ -35,14 +35,22 @@ bool open_file(int argc, char *argv[])
 
 	// check we have a file name
 	if (argc != 2) {
-	fputs("Usage: %s <file>\n", stderr);
+		putp(tigetstr("rmcup"));
+		endwin();
+		fputs("Usage:\ngex <file name>\ngex --help\n", stderr);
 		return false;
 	} else {
 		app.fname = argv[1];
-		return helperfunction_open_file();
+		if (strcmp(app.fname,"--help")==0) {
+			putp(tigetstr("rmcup"));
+			endwin();
+            snprintf(tmp, 40, "Version %s\n", GEX_VERSION);
+			fputs(tmp, stderr);
+			return false;
+		} else {
+			return helperfunction_open_file();
+		}
 	}
-
-
 }
 
 void close_file()

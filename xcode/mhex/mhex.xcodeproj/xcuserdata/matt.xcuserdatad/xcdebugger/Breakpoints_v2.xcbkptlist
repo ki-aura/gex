@@ -116,8 +116,8 @@
             filePath = "../../file_handling.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "78"
-            endingLineNumber = "78"
+            startingLineNumber = "79"
+            endingLineNumber = "79"
             landmarkName = "save_changes()"
             landmarkType = "9">
          </BreakpointContent>
@@ -132,8 +132,8 @@
             filePath = "../../file_handling.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "77"
-            endingLineNumber = "77"
+            startingLineNumber = "78"
+            endingLineNumber = "78"
             landmarkName = "save_changes()"
             landmarkType = "9">
          </BreakpointContent>
@@ -263,6 +263,22 @@
             startingLineNumber = "177"
             endingLineNumber = "177"
             landmarkName = "get_window_click(event, row, col)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "7CFCC09C-A9AD-4003-98B7-3A8950B4806F"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../file_handling.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "44"
+            endingLineNumber = "44"
+            landmarkName = "open_file(argc, argv)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
