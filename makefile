@@ -2,53 +2,38 @@
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
     CC = clang
-    ASAN_FLAGS = -fsanitize=address,undefined,leak
-    TSAN_FLAGS = -fsanitize=thread,undefined
 else
     CC = gcc
-    ASAN_FLAGS = -fsanitize=address,undefined
-    TSAN_FLAGS = -fsanitize=thread,undefined
 endif
 
 # Common flags
-CFLAGS_COMMON  = -Wextra
-CFLAGS_DEBUG   = -g
-LIBS           = -lncurses -lpanel -lmenu
-TARGET         = gex
-SRC            = gex.c file_handling.c gex_helper_funcs.c keyb_man.c win_man.c
-OBJ            = $(SRC:.c=.o)
+CFLAGS_COMMON = -Wextra
+TARGET        = gex
+SRC           = gex.c file_handling.c gex_helper_funcs.c keyb_man.c win_man.c
+OBJ           = $(SRC:.c=.o)
 
-.PHONY: all clean tidy asan tsan release
+# NCURSES flags
+ifeq ($(UNAME_S),Darwin)
+    # macOS: use system ncurses, panel, menu
+    NCURSES_FLAGS = -lncurses -lpanel -lmenu
+else
+    # Linux: use Homebrew's ncurses
+    NCURSES_PREFIX := $(shell brew --prefix ncurses)
+    NCURSES_FLAGS = -I$(NCURSES_PREFIX)/include -L$(NCURSES_PREFIX)/lib -lncurses -lpanel -lmenu
+endif
+
+.PHONY: all clean release
 
 # Default target
-all: asan
+all: release
 
 # Release build
 release: CFLAGS = $(CFLAGS_COMMON)
 release: $(TARGET)
 
-# AddressSanitizer build
-asan: CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_DEBUG) $(ASAN_FLAGS)
-asan: $(TARGET)
-
-# ThreadSanitizer build
-tsan: CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_DEBUG) $(TSAN_FLAGS)
-tsan: $(TARGET)
-
-# clang-tidy targets
-tidy:
-	xcrun clang-tidy $(SRC) \
-		-checks='clang-diagnostic-*,clang-analyzer-*,misc-unused-parameters' \
-		-- -Wall -Wextra
-
-maxtidy:
-	xcrun clang-tidy $(SRC) \
-		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*,-misc-include-cleaner' \
-		-- -Wall -Wextra
-
 # Build rules
 $(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $(OBJ) $(NCURSES_FLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
