@@ -138,6 +138,14 @@ typedef struct {
 	WINDOW *win;
 } status_windef;
 
+typedef struct {
+	int height;
+	int width;
+	WINDOW *border;
+	WINDOW *win;
+	char *helpmsg;
+} helper_windef;
+
 
 void handle_global_keys(int k);
 bool initial_setup(int argc, char *argv[]);
@@ -148,6 +156,7 @@ bool create_main_menu();
 
 extern appdef app;
 extern status_windef status;
+extern helper_windef helper;
 extern hex_windef hex;
 extern ascii_windef ascii;
 extern char *tmp;// makes debug panel usage easier

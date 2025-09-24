@@ -2,6 +2,7 @@
 
 // Global variables
 status_windef status = {.win = NULL, .border = NULL};
+helper_windef helper = {.win = NULL, .border = NULL};
 hex_windef hex = {.win = NULL, .border = NULL};
 ascii_windef ascii = {.win = NULL, .border = NULL};
 appdef app;
@@ -40,6 +41,7 @@ bool initial_setup(int argc, char *argv[])
 
 	// set up global variable for debug & popup panel
 	tmp = malloc(256); strcpy(tmp, " ");
+	helper.helpmsg = malloc(256); strcpy(helper.helpmsg, " ");
 	
 	// Hex window offset to start of file
 	hex.v_start = 0;
@@ -70,6 +72,7 @@ void final_close(int signum)
 	
 	// free any globals
 	free(tmp);
+	free(helper.helpmsg);
 	
 	// close out the hash
 	kh_clear(charmap, app.edmap);
