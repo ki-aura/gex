@@ -95,14 +95,14 @@ void final_close(int signum)
 void handle_global_keys(int k) {
 
 	switch(k){
-	case KEY_MOUSE: // only handle in Edit mode
+	case KEY_MOUSE: 
 		if ((getmouse(&event) == OK)) {
 		// Treat any of these as a "logical click"
 			const mmask_t CLICKY = BUTTON1_CLICKED | BUTTON1_DOUBLE_CLICKED | 
 						BUTTON1_TRIPLE_CLICKED | BUTTON1_PRESSED;
 			if (event.bstate & CLICKY) {
 				int row, col;
-				clickwin win = get_window_click(&event, &row, &col); // relative coords, or 'n'
+				clickwin win = get_window_click(&row, &col); // relative coords, or 'n'
 				handle_click(win, row, col);
 				update_cursor();
 			}
@@ -144,13 +144,13 @@ void handle_global_keys(int k) {
 }
 
 
-clickwin get_window_click(MEVENT *event, int *row, int *col) 
+clickwin get_window_click(int *row, int *col) 
 {
     int win_rs, win_cs, win_re, win_ce; // rs row start, rs row end, ...
 	
 	// get mouse row (y) and col (x)
-    int mr = event->y;
-    int mc = event->x;
+    int mr = event.y;
+    int mc = event.x;
 
     // Check hex window
     getbegyx(hex.win, win_rs, win_cs); // row and col start
@@ -217,15 +217,15 @@ signal(SIGTERM, final_close);
 
 // menu functions
  
- bool create_main_menu()
+ bool create_main_menu(void)
 {
     const char *items[] = {
-        "QUIT            (q)",
-        "SAVE_Changes    (s)",
-        "ABANDON_Changes (a)",
-        "GOTO_Byte       (g)",
-        "INSERT_Bytes    (i)",
-        "DELETE_Bytes    (d)"
+        "QUIT             (q)",
+        "SAVE_Changes     (s)",
+        "ABANDON_Changes  (a)",
+        "GOTO_Byte        (g)",
+        "INSERT_Bytes     (i)",
+        "DELETE_Bytes     (d)"
     };
     int mi = sizeof(items)/sizeof(items[0]);
     int highlight = 0;

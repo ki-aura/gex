@@ -10,8 +10,8 @@ void handle_in_screen_movement(int k);
 void handle_scrolling_movement(int k);
 void handle_edit_keys(int k);
 
-void k_left();
-void k_right();
+void k_left(void);
+void k_right(void);
 
 
 #endif

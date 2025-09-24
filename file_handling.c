@@ -1,6 +1,6 @@
 #include "gex.h"
 
-bool helperfunction_open_file(){
+bool helperfunction_open_file(void){
 	// try to open it
 	app.fd = open(app.fname, O_RDWR);
 	if (app.fd < 0) {
@@ -63,7 +63,7 @@ bool open_file(int argc, char *argv[])
 	}
 }
 
-void close_file()
+void close_file(void)
 {
 	munmap(app.map, app.fsize);
 	close(app.fd);
@@ -83,7 +83,7 @@ int cmp_key(const void *a, const void *b) {
     return 0;
 }
  
-void save_changes(){
+void save_changes(void){
 	if (kh_size(app.edmap) == 0)
 		popup_question("No changes made",
 			"Press any key to continue", PTYPE_CONTINUE);
@@ -124,7 +124,7 @@ void save_changes(){
 	}	
 }
 
-void abandon_changes(){
+void abandon_changes(void){
     if (kh_size(app.edmap) == 0)
         popup_question("No changes to abandon",
             "Press any key to continue", PTYPE_CONTINUE);
@@ -142,11 +142,11 @@ void abandon_changes(){
 
 // helper: build temp filename "<fname>.gex"
 static char *make_temp_name(const char *fname) {
-    size_t len = strlen(fname) + 5;
-    char *tmp = malloc(len);
-    if (!tmp) return NULL;
-    snprintf(tmp, len, "%s.gex", fname);
-    return tmp;
+    size_t len = strlen(fname) + 8;
+    char *tmpnam = malloc(len);
+    if (!tmpnam) return NULL;
+    snprintf(tmpnam, len, "%s.gextmp", fname);
+    return tmpnam;
 }
 
 // portable copy from fd src to fd dst for count bytes
@@ -276,7 +276,7 @@ out_free:
 
 
 
-void insert_bytes(){
+void insert_bytes(void){
 unsigned long byteins, ins_offset;
     if (kh_size(app.edmap) > 0)
         popup_question("Save changes before inserting bytes",
@@ -301,7 +301,7 @@ unsigned long byteins, ins_offset;
     }
 }
 
-void delete_bytes(){
+void delete_bytes(void){
 unsigned long bytedel, del_offset, max_pos;
     if (kh_size(app.edmap) > 0)
         popup_question("Save changes before deleting bytes",

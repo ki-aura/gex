@@ -36,6 +36,15 @@ tidy:
 		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*,-misc-include-cleaner' \
 		-- -Wall -Wextra
 
+bigtidy:
+	xcrun clang-tidy $(SRC) \
+		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*,-misc-include-cleaner' \
+		-- -Wall -Wextra -Wshadow -Wconversion -Wsign-conversion -Wcast-qual -Wpedantic
+
+maxtidy:
+	xcrun clang-tidy $(SRC) \
+		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*,-misc-include-cleaner, bugprone-*,-bugprone-reserved-identifier' \
+		-- -Wall -Wextra -Wshadow -Wconversion -Wsign-conversion -Wcast-qual -Wpedantic
 
 # Build rules
 $(TARGET): $(OBJ)

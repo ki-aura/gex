@@ -40,35 +40,8 @@ void handle_click(clickwin win, int row, int col){
 	}
 	return;
 }
-/*
 
-
-
-				next steps
-				- implement a first / next / prev change search - will need to qsort the 
-					changes into an array see khash demo code for qsort
-				- add insert/delete
-
- Functions you’ll likely need
- Initialization → create the tree instance.
- Insert → add an edit at a file offset (replaces if already exists).
- Find → retrieve the edit by offset.
- Erase → remove edit by offset.
- Iterator (begin/next/end) → walk through edits in order.
- Destroy → free memory.
- 
- nsert / Delete bytes in file
- When you insert bytes at offset pos:
- All edits with key >= pos must shift by +N.
- When you delete N bytes starting at pos:
- All edits with pos <= key < pos+N must be deleted.
- All edits with key >= pos+N must shift by -N.
-								
-					
-
-
-*/
-void k_left(){
+void k_left(void){
 	if(app.in_hex){
 		if (!hex.is_hinib){
 			// we can safely move to left nib. don't move ascii cursor
@@ -100,7 +73,7 @@ void k_left(){
 	}
 }
 
-void k_right(){
+void k_right(void){
 	if(app.in_hex){
 		if (hex.is_hinib){
 			// we can safely move to right nib. don't move ascii cursor

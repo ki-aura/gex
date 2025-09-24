@@ -19,7 +19,7 @@
 #include <assert.h>
 #include "khash.h"
 
-#define GEX_VERSION "1.3.2"
+#define GEX_VERSION "1.3.3"
 
 // keys we need that aren't already defined by ncurses
 #define KEY_ESCAPE 27
@@ -142,8 +142,8 @@ typedef struct {
 void handle_global_keys(int k);
 bool initial_setup(int argc, char *argv[]);
 void final_close(int signum);
-clickwin get_window_click(MEVENT *event, int *row, int *col);
-bool create_main_menu();
+clickwin get_window_click(int *row, int *col);
+bool create_main_menu(void);
 
 
 extern appdef app;

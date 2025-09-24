@@ -132,7 +132,7 @@ int row_digit_to_offset(int row, int digit){
 	return (row * ascii.width) + digit;
 }
 
-unsigned long cursor_full_file_offset(){
+unsigned long cursor_full_file_offset(void){
 	// get current location on screen + grid offset
     unsigned long idx = hex.v_start + row_digit_to_offset(hex.cur_row, hex.cur_digit);
     // and adjust if there's not enough file to fill the grid

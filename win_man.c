@@ -1,7 +1,7 @@
 #include "gex.h"
 
 
-void size_windows() {
+void size_windows(void) {
 	// Get the current screen dimensions
 	getmaxyx(stdscr, app.rows, app.cols);
 	app.too_small = false;
@@ -12,7 +12,7 @@ void size_windows() {
 	ascii.height = hex.height;					
 	
 	// calculate window widths
-	hex.width = ((int)((app.cols-4) / 4) * 3.0); 
+	hex.width = ((int)((app.cols-4) / 4) * 3); 
 	ascii.width = (int)(hex.width / 3);
 	status.width = hex.width + ascii.width + 2; // 2 for the internal borders of hex & ascii
 
@@ -26,7 +26,7 @@ void size_windows() {
 }
 
 // Function to create and resize all windows
-void create_windows() {
+void create_windows(void) {
    // get sizes
    resizeterm(0, 0); 
    refresh();
@@ -67,7 +67,7 @@ void create_windows() {
 }
 
 // Function to delete all windows
-void delete_windows() {
+void delete_windows(void) {
 if (status.win != NULL) {delwin(status.win); status.win = NULL; }
 if (hex.win != NULL) {delwin(hex.win); hex.win = NULL; }
 if (ascii.win != NULL) {delwin(ascii.win); ascii.win = NULL; } 
@@ -76,7 +76,7 @@ if (hex.border != NULL) {delwin(hex.border); hex.border = NULL; }
 if (ascii.border != NULL) {delwin(ascii.border); ascii.border = NULL; } 
 }
 
-void refresh_status() {
+void refresh_status(void) {
 	mvwprintw(status.win, 0, 0, "GEX %s [%s] Size:%lu Offset:%lu             ", 
 			GEX_VERSION, get_filename(app.fname), app.fsize, cursor_full_file_offset());
 	mvwprintw(status.win, 1, 0, "Grid offset %lu-%lu Screen:%dx%d Grid:%dx%d=%d           ", 
@@ -90,7 +90,7 @@ void refresh_status() {
 	wnoutrefresh(status.win);
 }
 
-void refresh_grids(){
+void refresh_grids(void){
 	char hinib, lonib, a_char;
 	int offset = 0, r=0, hc=0, ac=0;
 	bool chg;
@@ -132,7 +132,7 @@ void refresh_grids(){
 	wnoutrefresh(ascii.win);
 }
 
-void update_all_windows() {
+void update_all_windows(void) {
 	if (!app.too_small){	
 		// refresh content
 		refresh_grids();
@@ -140,7 +140,7 @@ void update_all_windows() {
 	}
 }
 
-void update_cursor(){
+void update_cursor(void){
 	// update status and debugging content
 	refresh_status();
 	// move the cursor
