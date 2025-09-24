@@ -19,7 +19,7 @@
 #include <assert.h>
 #include "khash.h"
 
-#define GEX_VERSION "1.3.1"
+#define GEX_VERSION "1.3.2"
 
 // keys we need that aren't already defined by ncurses
 #define KEY_ESCAPE 27
