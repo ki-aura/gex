@@ -32,24 +32,32 @@ bool helperfunction_open_file(){
 
 bool open_file(int argc, char *argv[])
 {
-
-	// check we have a file name
-	if (argc != 2) {
+	bool valid_file = true;
+	// check we have something passed on the command line
+	if (argc != 2) valid_file = false;
+	// check for help; version handled below
+	if (valid_file) 
+		if (strcmp( argv[1],"--help")==0 || strcmp( argv[1],"-h")==0 ) valid_file = false;
+	
+	if (!valid_file){
 		putp(tigetstr("rmcup"));
 		endwin();
 		fputs(	"Usage:\n"
-				"  gex <file name>\n"
-				"  gex -v or --version\n", stderr);
+				"  gex <file name>         edit file\n"
+				"  gex -v or --version     shows current version\n"
+				"  gex -h or --help        displays this message\n", stderr);
+		final_close(0);
 		return false;
 	} else {
-		app.fname = argv[1];
-		if (strcmp(app.fname,"--version")==0 || strcmp(app.fname,"-v")==0 ) {
+		if (strcmp(argv[1],"--version")==0 || strcmp(argv[1],"-v")==0 ) {
 			putp(tigetstr("rmcup"));
 			endwin();
             snprintf(tmp, 40, "Version %s\n", GEX_VERSION);
 			fputs(tmp, stderr);
+			final_close(0);
 			return false;
 		} else {
+			app.fname = argv[1];
 			return helperfunction_open_file();
 		}
 	}

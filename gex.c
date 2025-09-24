@@ -201,10 +201,14 @@ signal(SIGTERM, final_close);
 				if(create_main_menu()) break; // true if quit is selected
 			
 			ch = getch();
-app.lastkey = ch;
+			app.lastkey = ch;
 			handle_global_keys(ch);
-		}
-
+		} 
+	} else {
+		// initial setup failed
+		putp(tigetstr("rmcup"));
+		endwin();
+		fputs("File does not exist\n", stderr);
 	}
 	// tidy up
 	final_close(0);		
