@@ -118,6 +118,7 @@ void handle_global_keys(int k) {
 	// in-screen key movement
 	case KEY_NCURSES_BACKSPACE:
 	case KEY_MAC_DELETE:
+	case KEY_OTHER_DELETE:
 	case KEY_LEFT:
 	case KEY_RIGHT:
 	case KEY_HOME:

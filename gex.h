@@ -27,8 +27,9 @@
 #define KEY_TAB 9
 #define KEY_SPACE 32
 #define KEY_MAC_DELETE 127
+#define KEY_OTHER_DELETE 8
 #define KEY_LEFT_PROXY 222
-#define KEY_NCURSES_BACKSPACE KEY_BACKSPACE
+#define KEY_NCURSES_BACKSPACE KEY_BACKSPACE // this is 263
 
 // types of popup question
 typedef enum { 	
