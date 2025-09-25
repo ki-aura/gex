@@ -82,7 +82,7 @@ void refresh_status(void) {
 	mvwprintw(status.win, 1, 0, "Grid offset %lu-%lu Screen:%dx%d Grid:%dx%d=%d           ", 
 			hex.v_start, hex.v_start+hex.grid-1, app.rows, app.cols, ascii.width, hex.height, hex.grid);
 	mvwprintw(status.win, 2, 0, 
-			"cr%02d cc%02d cd%02d Hwin%d hinib%d lk0x%lX lek0x%lX chgs%03d         ",
+			"cr%02d cc%02d cd%02d Hwin%d hinib%d lk%d lek%d chgs%03d         ",
 			hex.cur_row, hex.cur_col, hex.cur_digit, app.in_hex, hex.is_hinib, 
 			app.lastkey, app.lasteditkey, kh_size(app.edmap));
 	box(status.border, 0, 0);

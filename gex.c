@@ -198,7 +198,13 @@ signal(SIGTERM, final_close);
 			if(ch == KEY_REFRESH) handle_global_keys(ch);
 			
 			if(ch == KEY_ESCAPE) 
-				if(create_main_menu()) break; // true if quit is selected
+				if(create_main_menu())  // true if quit is selected
+					if (kh_size(app.edmap) != 0) // there are unsaved changes
+					    if(popup_question("Abandon unsaved changes?",
+            				"This action can not be undone (y/n)", PTYPE_YN))
+            					break; // we want to abandon changes
+            			else continue; // we don't want to abandon changes
+            		else break;  // there are no changes to abandon
 			
 			ch = getch();
 			app.lastkey = ch;
