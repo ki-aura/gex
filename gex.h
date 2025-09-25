@@ -19,7 +19,7 @@
 #include <assert.h>
 #include "khash.h"
 
-#define GEX_VERSION "1.3.4"
+#define GEX_VERSION "1.3.6"
 
 // keys we need that aren't already defined by ncurses
 #define KEY_ESCAPE 27
@@ -27,7 +27,7 @@
 #define KEY_TAB 9
 #define KEY_SPACE 32
 #define KEY_MAC_DELETE 127
-#define KEY_OTHER_DELETE 8
+#define KEY_OTHER_DELETE 8		// e.g. on debian 
 #define KEY_LEFT_PROXY 222
 #define KEY_NCURSES_BACKSPACE KEY_BACKSPACE // this is 263
 
