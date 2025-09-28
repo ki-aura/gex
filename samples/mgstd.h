@@ -1,30 +1,28 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-
+#include <arpa/inet.h>
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <glob.h>
+#include <limits.h>
+#include <locale.h>
+#include <menu.h>
 #include <ncurses.h>
+#include <netdb.h>
+#include <netinet/icmp6.h>
+#include <netinet/ip_icmp.h>
+#include <panel.h>
+#include <pthread.h>
+#include <regex.h>
+#include <signal.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
-#include <panel.h>
-
-#define FALSE 0
-#define TRUE 1
-
-#define DEBUG 1
-
-#if DEBUG
-    #define DD(fmt, ...) printf("DEBUG: " fmt "\n", ##__VA_ARGS__)
-#else
-    #define DD(fmt, ...)  // nothing
-#endif
-
