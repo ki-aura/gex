@@ -1,29 +1,23 @@
 From Project Folder
 ===================
-grep -n "1.3.6" *.h
-cd Projects/gex
+git tag --list
+grep  "GEX_VERSION" gex.h
 git add .
-git commit -m "ready for v1.3.6"
+git commit -m "ready for v1.4.0"
 git push
-git tag -a v1.3.6 -m "Release v1.3.6"
-git push origin v1.3.6
-
-From Github
-===========
-Project will still be under the active 1.3 branch
-Create a new release based on 1.3.6 tag
-OR USE COMMAND LINE
-gh release create v1.3.6 --title "Release v1.3.6" --notes "Release v1.3.6 notes..."
+git tag -a v1.4.0 -m "Release v1.4.0"
+git push origin v1.4.0
+gh release create v1.4.0 --title "Release v1.4.0" --notes "Release v1.4.0 notes..."
 
 From Homebrew Folder
 ====================
 cd /opt/homebrew/Library/Taps/ki-aura/homebrew-gex
-curl -L -o v1.3.6.tar.gz https://github.com/ki-aura/gex/archive/refs/tags/v1.3.6.tar.gz
-shasum -a 256 v1.3.6.tar.gz
+curl -L -o v1.4.0.tar.gz https://github.com/ki-aura/gex/archive/refs/tags/v1.4.0.tar.gz
+shasum -a 256 v1.4.0.tar.gz
 rm *.gz
 nano Formula/gex.rb
 git add Formula/gex.rb
-git commit -m "ready for v1.3.6"
+git commit -m "ready for v1.4.0"
 git push
 
 Test
