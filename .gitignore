@@ -13,3 +13,6 @@
 *.obj
 *.lo
 *.class
+
+# Ignore test files
+test_*
