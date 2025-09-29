@@ -32,13 +32,16 @@ typedef struct BNode {
     int *counts;            /* only used for leaves: counts per key */
     struct BNode **children;/* child pointers (size keys+1). For leaves unused (but allocated) */
     struct BNode *next;     /* leaf sibling link for iteration */
+    struct BNode *prev;  	/* backward leaf link */
 } BNode;
 
 typedef struct {
     BNode *root;
 } BTree;
 
-size_t ORDER_MAX_KEYS, KEYS_ARR_SIZE, CHILDS_ARR_SIZE;  
+#define ORDER_MAX_KEYS 16
+#define KEYS_ARR_SIZE (ORDER_MAX_KEYS + 1)      /* allocate +1 for temporary overflow */
+#define CHILDS_ARR_SIZE (ORDER_MAX_KEYS + 2)    /* children = keys+1; +1 for overflow */
 
 
 /* Estimate ORDER_MAX_KEYS from file size (bytes) */
@@ -84,6 +87,7 @@ static BNode *node_create(int is_leaf) {
         n->counts = NULL;
     }
     n->next = NULL;
+    n->prev = NULL;
     return n;
 }
 
@@ -144,37 +148,35 @@ static void split_child(BNode *parent, int idx) {
     int mid = total / 2; /* split point */
 
     if (child->is_leaf) {
-        /* move keys[mid .. total-1] to newn */
         int new_count = total - mid;
         for (int j = 0; j < new_count; ++j) {
-            newn->keys[j] = child->keys[mid + j];     // ownership moves
+            newn->keys[j] = child->keys[mid + j];    // move ownership
             newn->counts[j] = child->counts[mid + j];
-            child->keys[mid + j] = NULL;             // prevent double-free
+            child->keys[mid + j] = NULL;
         }
         newn->num_keys = new_count;
         child->num_keys = mid;
 
-        /* link leaves */
+        /* fix sibling links */
         newn->next = child->next;
+        if (newn->next) newn->next->prev = newn;  // backward link from next leaf
+        newn->prev = child;                       // backward link to left sibling
         child->next = newn;
 
-        /* shift parent's children right to make room */
+        /* shift parent's children right */
         for (int j = parent->num_keys; j >= idx + 1; --j) {
             parent->children[j+1] = parent->children[j];
         }
         parent->children[idx+1] = newn;
 
-        /* shift parent's keys and insert promotion key = newn->keys[0] */
+        /* shift parent's keys and insert promotion key = first key of new leaf */
         for (int j = parent->num_keys - 1; j >= idx; --j) {
             parent->keys[j+1] = parent->keys[j];
         }
-        parent->keys[idx] = newn->keys[0]; /* alias to leaf string; parent does not own it */
+        parent->keys[idx] = newn->keys[0];  // alias only
         parent->num_keys++;
     } else {
-        /* internal child split: promote child->keys[mid] to parent
-         * left keeps keys[0..mid-1], right(newn) gets keys[mid+1..end]
-         * children split accordingly
-         */
+        /* Internal node split: promote middle key */
         int right_count = total - (mid + 1);
         for (int j = 0; j < right_count; ++j) {
             newn->keys[j] = child->keys[mid + 1 + j];
@@ -194,7 +196,7 @@ static void split_child(BNode *parent, int idx) {
         for (int j = parent->num_keys - 1; j >= idx; --j) {
             parent->keys[j+1] = parent->keys[j];
         }
-        parent->keys[idx] = child->keys[mid]; /* promoted key (alias) */
+        parent->keys[idx] = child->keys[mid]; // alias only
         parent->num_keys++;
     }
 }
@@ -203,15 +205,45 @@ static void split_child(BNode *parent, int idx) {
 /* Insert into a non-full node. The provided 'key' must be a strdup'd string if insertion into leaf occurs.
  * If a duplicate is found in a leaf, function increments the count and frees key.
  */
+/* Check if key exists in leaf or its immediate next leaf first key, consolidate if found */
+/* Return 1 if key exists (increment count), 0 otherwise.
+ * Checks current leaf and boundary keys in prev/next leaves to prevent duplicates across splits.
+ */
+static int leaf_find_and_increment(BNode *leaf, const char *key) {
+    // Check current leaf
+    for (int i = 0; i < leaf->num_keys; ++i) {
+        if (strcmp(leaf->keys[i], key) == 0) {
+            leaf->counts[i]++;
+            return 1;
+        }
+    }
+
+    // Check previous leaf’s last key (possible duplicate across split)
+    if (leaf->prev && leaf->prev->num_keys > 0) {
+        int last = leaf->prev->num_keys - 1;
+        if (strcmp(leaf->prev->keys[last], key) == 0) {
+            leaf->prev->counts[last]++;
+            return 1;
+        }
+    }
+
+    // Check next leaf’s first key (possible duplicate across split)
+    if (leaf->next && leaf->next->num_keys > 0) {
+        if (strcmp(leaf->next->keys[0], key) == 0) {
+            leaf->next->counts[0]++;
+            return 1;
+        }
+    }
+
+    return 0;  // key not found
+}
+
+/* Insert into a non-full node, consolidating duplicates across split leaf boundaries */
 static void insert_nonfull(BNode *node, char *key) {
     if (node->is_leaf) {
-        /* Check for duplicates first */
-        for (int j = 0; j < node->num_keys; j++) {
-            if (strcmp(node->keys[j], key) == 0) {
-                node->counts[j]++;
-                free(key);
-                return;
-            }
+        if (leaf_find_and_increment(node, key)) {
+            free(key);
+            return;
         }
 
         /* Find insert position */
@@ -231,10 +263,13 @@ static void insert_nonfull(BNode *node, char *key) {
         int i = node_find_index(node, key);
         BNode *child = node->children[i];
         assert(child != NULL);
+
         if ((size_t)child->num_keys == ORDER_MAX_KEYS) {
             split_child(node, i);
+            /* After split, key may belong to new right child */
             if (strcmp(key, node->keys[i]) >= 0) i++;
         }
+
         insert_nonfull(node->children[i], key);
     }
 }
@@ -248,7 +283,7 @@ static void btree_insert(BTree *t, const char *token) {
 
     BNode *r = t->root;
     if ((size_t)r->num_keys == ORDER_MAX_KEYS) {
-        BNode *s = node_create(0);   // new root
+        BNode *s = node_create(0);  // new root
         s->children[0] = r;
         t->root = s;
         split_child(s, 0);
@@ -257,6 +292,7 @@ static void btree_insert(BTree *t, const char *token) {
         insert_nonfull(r, dup);
     }
 }
+
 
 /* Iterate leaves (leftmost to right) and print key (count) */
 static void btree_print(BTree *t) {
@@ -268,6 +304,22 @@ static void btree_print(BTree *t) {
             printf("%s (%d)\n", n->keys[i], n->counts[i]);
         }
         n = n->next;
+    }
+}
+
+static void btree_print_reverse(BTree *t) {
+    if (!t || !t->root) return;
+
+    /* go to rightmost leaf */
+    BNode *n = t->root;
+    while (!n->is_leaf) n = n->children[n->num_keys];
+
+    /* iterate backward */
+    while (n) {
+        for (int i = n->num_keys - 1; i >= 0; --i) {
+            printf("%s (%d)\n", n->keys[i], n->counts[i]);
+        }
+        n = n->prev;
     }
 }
 
@@ -291,23 +343,19 @@ static void process_file(BTree *t, const char *filename) {
     fclose(f);
 }
 
+
 int main(int argc, char **argv) {
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <file>\n", argv[0]);
         return 2;
     }
 
-    ORDER_MAX_KEYS = estimate_order_max_keys(argv[1]);
-    printf("Using ORDER_MAX_KEYS = %zu\n", ORDER_MAX_KEYS);
-
-	/* Derived sizes */
-	KEYS_ARR_SIZE = ORDER_MAX_KEYS + 1;      /* allocate +1 for temporary overflow */
-	CHILDS_ARR_SIZE = ORDER_MAX_KEYS + 2;    /* children = keys+1; +1 for overflow */
-
-
     BTree *tree = tree_create();
     process_file(tree, argv[1]);
+    printf("Forwards...\n'n");
     btree_print(tree);
+    printf("\n\nBackwards...\n\n");
+    btree_print_reverse(tree);
     tree_free(tree);
     return 0;
 }
