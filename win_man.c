@@ -82,9 +82,9 @@ void refresh_status(void) {
 	mvwprintw(status.win, 1, 0, "Grid offset %lu-%lu Screen:%dx%d Grid:%dx%d=%d           ", 
 			hex.v_start, hex.v_start+hex.grid-1, app.rows, app.cols, ascii.width, hex.height, hex.grid);
 	mvwprintw(status.win, 2, 0, 
-			"cr%02d cc%02d cd%02d Hwin%d hinib%d lk%d lek%d chgs%03d         ",
+			"cr%02d cc%02d cd%02d Hwin%d hinib%d lk%d lek%d chg%0d         ",
 			hex.cur_row, hex.cur_col, hex.cur_digit, app.in_hex, hex.is_hinib, 
-			app.lastkey, app.lasteditkey, kh_size(app.edmap));
+			app.lastkey, app.lasteditkey, RB_SIZE());
 	box(status.border, 0, 0);
 	wnoutrefresh(status.border);
 	wnoutrefresh(status.win);
@@ -100,12 +100,13 @@ void refresh_grids(void){
 		// break the byte into displayable nibbles for the hex window
 		byte_to_nibs(app.map[hex.v_start + offset], &hinib, &lonib);
 		// check if there's an edit for this char
-		slot = kh_get(charmap, app.edmap, (size_t)(hex.v_start + offset));
-		if (slot != kh_end(app.edmap)) {
+		search.offset = (size_t)(hex.v_start + offset);
+		found = RB_FIND(FByteTree, &edits, &search);
+		if (found) {
 			// get the changed byte
 			chg=true;
-			byte_to_nibs(kh_val(app.edmap, slot), &hinib, &lonib);
-			a_char = byte_to_ascii(kh_val(app.edmap, slot));
+			byte_to_nibs(found->byte, &hinib, &lonib);
+			a_char = byte_to_ascii(found->byte);
 		} else {
 			chg=false;
 			a_char = byte_to_ascii(app.map[hex.v_start + offset]);

@@ -80,20 +80,20 @@
 
 /* -------------------------- Node Definition -------------------------- */
 
-struct Animal {
-    RB_ENTRY(Animal) by_key;    /* link field for key-ordered tree */
-    int key;
-    const char *name;
+struct FByte {
+    RB_ENTRY(FByte) fb_key;    /* link field for key-ordered tree */
+    size_t offset;
+    unsigned char byte;
 };
 
 /* -------------------------- Tree Heads (globals) -------------------------- */
 
-RB_HEAD(AnimalTree_key, Animal);   // defines struct AnimalTree_key
-extern struct AnimalTree_key edits;
+RB_HEAD(FByteTree, FByte);   // defines main tree struct 
+extern struct FByteTree edits;
 
 /* ---------------------- RB Prototype Static ---------------------- */
 
-RB_PROTOTYPE(AnimalTree_key, Animal, by_key, Animal_Keycmp)
+RB_PROTOTYPE(FByteTree, FByte, fb_key, off_cmp)
 
 /* ---------------------- Comparison Functions ---------------------- */
 
@@ -103,14 +103,14 @@ RB_PROTOTYPE(AnimalTree_key, Animal, by_key, Animal_Keycmp)
 #undef RB_INSERT
 #undef RB_REMOVE
 
-struct Animal *RB_INSERT_KEY(struct AnimalTree_key *head, struct Animal *node);
-struct Animal *RB_REMOVE_KEY(struct AnimalTree_key *head, struct Animal *node);
+struct FByte *RB_INSERT_KEY(struct FByteTree *head, size_t offs, unsigned char byt);
+struct FByte *RB_REMOVE_KEY(struct FByteTree *head, struct FByte *node);
 
-#define RB_INSERT(headType, head, node) RB_INSERT_KEY(head, node)
+#define RB_INSERT(headType, head, offs, byt) RB_INSERT_KEY(head, offs, byt)
 #define RB_REMOVE(headType, head, node) RB_REMOVE_KEY(head, node)
 
 extern int RB_SIZE(void);
-void RB_CLEAR_TREE(struct AnimalTree_key *head);
+void RB_CLEAR_TREE(struct FByteTree *head);
 
 
 #endif 

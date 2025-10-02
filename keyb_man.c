@@ -132,9 +132,12 @@ int idx;
 			if(!hex.is_hinib) k_left();
 			// find out where we are; check if there's an edit; if so delete it
 			idx = row_digit_to_offset(hex.cur_row, hex.cur_digit);
-			slot = kh_get(charmap, app.edmap, (size_t)(hex.v_start + idx));
-            if (slot != kh_end(app.edmap)) // we have an edit; get rid of it
-                    kh_del(charmap, app.edmap, slot);
+			search.offset = (size_t)(hex.v_start + idx);
+			found = RB_FIND(FByteTree, &edits, &search);
+			if (found) {
+				RB_REMOVE(FByteTree, &edits, found);
+			}
+
 			// update windows as highlights will  have changed
 			update_all_windows();
 		}
@@ -239,13 +242,16 @@ void handle_edit_keys(int k){
         if (isprint(k)) {
             // if it's the same as the underlying file then get rid of any edit map
             if( k == app.map[hex.v_start + idx]){
-                slot = kh_get(charmap, app.edmap, (size_t)(hex.v_start + idx));
-                if (slot != kh_end(app.edmap))
-                    kh_del(charmap, app.edmap, slot);
+				search.offset = (size_t)(hex.v_start + idx);
+				found = RB_FIND(FByteTree, &edits, &search);
+				if (found) {
+					RB_REMOVE(FByteTree, &edits, found);
+				}
+
             }
             else {  // push the change onto the edit map
-                slot = kh_put(charmap, app.edmap, (size_t)( hex.v_start + idx), &khret);
-                kh_val(app.edmap, slot) = (unsigned char)k;
+				RB_INSERT(FByteTree, &edits, hex.v_start + idx, (unsigned char)k);
+                
             }
             valid_edit = true;
         }
@@ -258,10 +264,10 @@ void handle_edit_keys(int k){
             
             // if there's an existing change, we need to apply this nibble to that so that we 
             // can compare a byte that's had a hi & low edit done to it
-            slot = kh_get(charmap, app.edmap, (size_t)(hex.v_start + idx));
-            if (slot != kh_end(app.edmap))
-            	// there's an existing change. get it and apply the nibble
-            	full_edit_byte = kh_val(app.edmap, slot);
+			search.offset = (size_t)(hex.v_start + idx);
+			found = RB_FIND(FByteTree, &edits, &search);
+			if (found)
+            	full_edit_byte = found->byte;
         	else 
             	// no existing change, so apply the the nibble to a copy of the file byte
             	full_edit_byte = full_file_byte;
@@ -273,12 +279,15 @@ void handle_edit_keys(int k){
             //is the edit the same as the underlying file?
             if( full_edit_byte == full_file_byte){
                 // if it is, delete any change that's stored
-                slot = kh_get(charmap, app.edmap, (size_t)(hex.v_start + idx));
-                if (slot != kh_end(app.edmap))
-                    kh_del(charmap, app.edmap, slot);
+				search.offset = (size_t)(hex.v_start + idx);
+				found = RB_FIND(FByteTree, &edits, &search);
+				if (found) {
+					RB_REMOVE(FByteTree, &edits, found);
+				}
+
             } else { //otherwise, push the change
-                slot = kh_put(charmap, app.edmap, (size_t)(hex.v_start + idx), &khret);
-                kh_val(app.edmap, slot) = full_edit_byte;
+				RB_INSERT(FByteTree, &edits, hex.v_start + idx, full_edit_byte);
+
             }
             valid_edit = true;
         }

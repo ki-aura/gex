@@ -5,11 +5,11 @@ status_windef status = {.win = NULL, .border = NULL};
 hex_windef hex = {.win = NULL, .border = NULL};
 ascii_windef ascii = {.win = NULL, .border = NULL};
 appdef app;
-khiter_t slot;
-int khret; // return value from kh_put calls - says if already exists
 MEVENT event;
 char *tmp = NULL;
 
+struct FByte search;
+struct FByte *found, *nod;
 
 
 ///////////////////////////////////////////////////
@@ -32,9 +32,6 @@ bool initial_setup(int argc, char *argv[])
 	keypad(stdscr, true); 	 // Enable function keys (like KEY_RESIZE )
 	set_escdelay(50);	 // speed up recognition of escape key - don't wait 1 sec for possible escape sequence
 	putp(tigetstr("smcup")); // use alternative buffer
-
-	// create edit map for edit changes and undos
-	app.edmap = kh_init(charmap);
 
 	// general app defaults
 
@@ -72,8 +69,7 @@ void final_close(int signum)
 	free(tmp);
 	
 	// close out the hash
-	kh_clear(charmap, app.edmap);
-	kh_destroy(charmap, app.edmap);
+	RB_CLEAR_TREE(&edits);
 	
 	// close file
 	close_file(); 
@@ -200,7 +196,7 @@ signal(SIGTERM, final_close);
 			
 			if(ch == KEY_ESCAPE) {
 				if(create_main_menu()) { // true if quit is selected
-					if (kh_size(app.edmap) != 0) {// there are unsaved changes
+					if (RB_SIZE() != 0) {// there are unsaved changes
 					    if(popup_question("Abandon unsaved changes?",
             					"This action can not be undone (y/n)", PTYPE_YN)) {
             				break; // we want to abandon changes

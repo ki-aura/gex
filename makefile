@@ -7,9 +7,9 @@ else
 endif
 
 # Common flags
-CFLAGS_COMMON = -Wextra
+CFLAGS_COMMON = 
 TARGET        = gex
-SRC           = gex.c file_handling.c gex_helper_funcs.c keyb_man.c win_man.c
+SRC           = gex.c file_handling.c gex_helper_funcs.c keyb_man.c win_man.c rbtree.c
 OBJ           = $(SRC:.c=.o)
 
 # NCURSES flags
@@ -30,6 +30,11 @@ all: release
 # Release build
 release: CFLAGS = $(CFLAGS_COMMON)
 release: $(TARGET)
+
+# debug build
+debug: CFLAGS = -Wall -Wextra -fsanitize=address -g -O0
+debug: $(TARGET)
+
 
 tidy:
 	xcrun clang-tidy $(SRC) \

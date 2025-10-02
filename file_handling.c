@@ -69,54 +69,21 @@ void close_file(void)
 	close(app.fd);
 }
 
-// Comparison for qsort: by int key
-typedef struct {
-	unsigned long key;
-	unsigned char val; 
-} kv_t;
-
-int cmp_key(const void *a, const void *b) {
-    const kv_t *pa = (const kv_t*)a;
-    const kv_t *pb = (const kv_t*)b;
-    if (pa->key < pb->key) return -1;
-    if (pa->key > pb->key) return 1;
-    return 0;
-}
- 
 void save_changes(void){
-	if (kh_size(app.edmap) == 0)
+	if (RB_SIZE() == 0)
 		popup_question("No changes made",
 			"Press any key to continue", PTYPE_CONTINUE);
 	else if(popup_question("Are you sure you want to save changes?",
 			"This action can not be undone (y/n)", PTYPE_YN)){
 	
-		// Allocate array to hold all kv pairs
-		size_t n = kh_size(app.edmap);
-		kv_t *arr = malloc(sizeof(kv_t) * n);
-	
-		// Copy hash table entries into array
-		size_t idx = 0;
-		for (slot = kh_begin(app.edmap); slot != kh_end(app.edmap); slot++) {
-			if (kh_exist(app.edmap, slot)) {
-				arr[idx].key = kh_key(app.edmap, slot);
-				arr[idx].val = kh_val(app.edmap, slot);
-				idx++;
-			}
-		}
-	
-		// Sort array by key
-		qsort(arr, n, sizeof(kv_t), cmp_key);
-	
-		// Apply changes in sorted order
-		for (size_t i = 0; i < n; i++) {
-			app.map[arr[i].key] = arr[i].val;
+		RB_FOREACH(nod, FByteTree, &edits) {
+			app.map[nod->offset] = nod->byte;
 		}
 
 		// and sync it out
 		msync(app.map, app.fsize, MS_SYNC);
 		// clear change history as these are now permanent
-		kh_clear(charmap, app.edmap);
-        free(arr);
+		RB_CLEAR_TREE(&edits);
         
 		// refresh to get rid of old change highlights
 		update_all_windows();
@@ -125,14 +92,14 @@ void save_changes(void){
 }
 
 void abandon_changes(void){
-    if (kh_size(app.edmap) == 0)
+    if (RB_SIZE()== 0)
         popup_question("No changes to abandon",
             "Press any key to continue", PTYPE_CONTINUE);
     else if(popup_question("Are you sure you want to abandon changes?",
             "This action can not be undone (y/n)", PTYPE_YN)){
     
         // abandon changes
-        kh_clear(charmap, app.edmap);
+        RB_CLEAR_TREE(&edits);
         // refresh to get rid of old change highlights
         update_all_windows();
         handle_global_keys(KEY_REFRESH);
@@ -278,7 +245,7 @@ out_free:
 
 void insert_bytes(void){
 unsigned long byteins, ins_offset;
-    if (kh_size(app.edmap) > 0)
+    if (RB_SIZE() > 0)
         popup_question("Save changes before inserting bytes",
             "Press any key to continue", PTYPE_CONTINUE);
     else {
@@ -303,7 +270,7 @@ unsigned long byteins, ins_offset;
 
 void delete_bytes(void){
 unsigned long bytedel, del_offset, max_pos;
-    if (kh_size(app.edmap) > 0)
+    if (RB_SIZE() > 0)
         popup_question("Save changes before deleting bytes",
             "Press any key to continue", PTYPE_CONTINUE);
     else {
