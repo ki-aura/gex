@@ -62,11 +62,11 @@ static inline int Animal_Strcmp(struct Animal *a, struct Animal *b) {
  * - Expands the functions/macros for actual use.
  * - Only one copy per C file; multiple C files require non-static versions.
  */
-RB_PROTOTYPE_STATIC(AnimalTree_key, Animal, by_key, Animal_Keycmp)
-RB_GENERATE_STATIC(AnimalTree_key, Animal, by_key, Animal_Keycmp)
+RB_PROTOTYPE(AnimalTree_key, Animal, by_key, Animal_Keycmp)
+RB_GENERATE(AnimalTree_key, Animal, by_key, Animal_Keycmp)
 
-RB_PROTOTYPE_STATIC(AnimalTree_name, Animal, by_name, Animal_Strcmp)
-RB_GENERATE_STATIC(AnimalTree_name, Animal, by_name, Animal_Strcmp)
+RB_PROTOTYPE(AnimalTree_name, Animal, by_name, Animal_Strcmp)
+RB_GENERATE(AnimalTree_name, Animal, by_name, Animal_Strcmp)
 
 /* -------------------------- Main Program -------------------------- */
 
