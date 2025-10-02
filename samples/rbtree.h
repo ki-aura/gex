@@ -1,3 +1,6 @@
+#ifndef RBTREE_H
+#define RBTREE_H
+
 /*
  * -------------------------
  * BSD Red-Black Tree (RB) API Quick Reference
@@ -73,12 +76,6 @@
  * - All iteration macros expand to for-loops; SAFE variants allow node deletion inside loop.
  */
 
-#ifndef RBTREE_MAIN_H
-#define RBTREE_MAIN_H
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "tree.h"   /* BSD-style sys/tree.h, vendored for portability */
 
 /* -------------------------- Node Definition -------------------------- */
@@ -91,6 +88,7 @@ struct Animal {
 
 /* -------------------------- Tree Heads (globals) -------------------------- */
 
+RB_HEAD(AnimalTree_key, Animal);   // defines struct AnimalTree_key
 extern struct AnimalTree_key keyHead;
 
 /* ---------------------- RB Prototype Static ---------------------- */
@@ -99,20 +97,14 @@ RB_PROTOTYPE(AnimalTree_key, Animal, by_key, Animal_Keycmp)
 
 /* ---------------------- Comparison Functions ---------------------- */
 
-int Animal_Keycmp(struct Animal *a, struct Animal *b);
 
-/* ---------------------- RB Function Prototypes & Wrappers ---------------------- */
-
-/* Prototype wrapper functions */
-struct Animal *RB_INSERT_WRAPPER(struct AnimalTree_key *head, struct Animal *node);
-struct Animal *RB_REMOVE_WRAPPER(struct AnimalTree_key *head, struct Animal *node);
 
 /* Undef / redefine macros to use wrappers */
 #undef RB_INSERT
 #undef RB_REMOVE
 
-extern struct Animal *RB_INSERT_KEY(struct AnimalTree_key *head, struct Animal *node);
-extern struct Animal *RB_REMOVE_KEY(struct AnimalTree_key *head, struct Animal *node);
+struct Animal *RB_INSERT_KEY(struct AnimalTree_key *head, struct Animal *node);
+struct Animal *RB_REMOVE_KEY(struct AnimalTree_key *head, struct Animal *node);
 
 #define RB_INSERT(headType, head, node) RB_INSERT_KEY(head, node)
 #define RB_REMOVE(headType, head, node) RB_REMOVE_KEY(head, node)
@@ -121,4 +113,4 @@ extern int RB_SIZE(void);
 void RB_CLEAR_TREE(struct AnimalTree_key *head);
 
 
-#endif /* ANIMAL_TREE_H */
+#endif 
