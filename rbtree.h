@@ -88,29 +88,28 @@ struct FByte {
 
 /* -------------------------- Tree Heads (globals) -------------------------- */
 
-RB_HEAD(FByteTree, FByte);   // defines main tree struct 
-extern struct FByteTree edits;
+RB_HEAD(edit_tree, FByte);   // defines main tree struct 
+extern struct edit_tree edits;
 
 /* ---------------------- RB Prototype Static ---------------------- */
 
-RB_PROTOTYPE(FByteTree, FByte, fb_key, off_cmp)
+RB_PROTOTYPE(edit_tree, FByte, fb_key, off_cmp)
 
 /* ---------------------- Comparison Functions ---------------------- */
 
 
 
-/* Undef / redefine macros to use wrappers */
+/* Undef macros to force use of own wrappers */
 #undef RB_INSERT
 #undef RB_REMOVE
 
-struct FByte *RB_INSERT_KEY(struct FByteTree *head, size_t offs, unsigned char byt);
-struct FByte *RB_REMOVE_KEY(struct FByteTree *head, struct FByte *node);
+// Replacement Insert/Remove functions
+struct FByte *RB_INSERT_FB(struct edit_tree *head, size_t offs, unsigned char byt);
+struct FByte *RB_REMOVE_FB(struct edit_tree *head, struct FByte *node);
 
-#define RB_INSERT(headType, head, offs, byt) RB_INSERT_KEY(head, offs, byt)
-#define RB_REMOVE(headType, head, node) RB_REMOVE_KEY(head, node)
-
-extern int RB_SIZE(void);
-void RB_CLEAR_TREE(struct FByteTree *head);
+// Additional functions supported by new Insert/Remove functions
+int RB_SIZE(void);
+void RB_CLEAR_TREE(struct edit_tree *head);
 
 
 #endif 

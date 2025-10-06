@@ -5,40 +5,40 @@
 
 
 /* -------------------------- Global Trees -------------------------- */
-struct FByteTree edits = RB_INITIALIZER(&edit_tree);
-int FBtree_size = 0;
+struct edit_tree edits = RB_INITIALIZER(&edit_tree);
+int edit_tree_size = 0;
 
 /* -------------------------- Wrappers and Size -------------------------- */
 
-struct FByte *RB_INSERT_KEY(struct FByteTree *head, size_t offs, unsigned char byt) {
+struct FByte *RB_INSERT_FB(struct edit_tree *head, size_t offs, unsigned char byt) {
 	struct FByte *node;
 	node = malloc(sizeof(*node));
 	node->offset = offs;
 	node->byte = byt;
 
-    struct FByte *res = FByteTree_RB_INSERT(head, node);
-    if (res == NULL) FBtree_size++;
+    struct FByte *res = edit_tree_RB_INSERT(head, node);
+    if (res == NULL) edit_tree_size++;
     return res;
 }
 
-struct FByte *RB_REMOVE_KEY(struct FByteTree *head, struct FByte *node) {
-    struct FByte *res = FByteTree_RB_REMOVE(head, node);
+struct FByte *RB_REMOVE_FB(struct edit_tree *head, struct FByte *node) {
+    struct FByte *res = edit_tree_RB_REMOVE(head, node);
     if (res != NULL) {
-    	FBtree_size--;
+    	edit_tree_size--;
     	free(node);
     }
-    return res;
+    return NULL;
 }
 
-void RB_CLEAR_TREE(struct FByteTree *head) {
+void RB_CLEAR_TREE(struct edit_tree *head) {
     struct FByte *p;
-    while ((p = RB_MIN(FByteTree, head)) != NULL) {
-        RB_REMOVE(FByteTree, head, p);
+    while ((p = RB_MIN(edit_tree, head)) != NULL) {
+        RB_REMOVE_FB(head, p);
     }
 }
 
 int RB_SIZE(void) {
-	return FBtree_size;
+	return edit_tree_size;
 }
 	
 /* ---------------------- Generate RB-tree Functions ---------------------- */
@@ -49,7 +49,7 @@ int off_cmp(struct FByte *a, struct FByte *b) {
     return 0;
 }
 
-RB_GENERATE(FByteTree, FByte, fb_key, off_cmp)
+RB_GENERATE(edit_tree, FByte, fb_key, off_cmp)
 
    
 

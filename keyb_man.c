@@ -133,9 +133,9 @@ int idx;
 			// find out where we are; check if there's an edit; if so delete it
 			idx = row_digit_to_offset(hex.cur_row, hex.cur_digit);
 			search.offset = (size_t)(hex.v_start + idx);
-			found = RB_FIND(FByteTree, &edits, &search);
+			found = RB_FIND(edit_tree, &edits, &search);
 			if (found) {
-				RB_REMOVE(FByteTree, &edits, found);
+				RB_REMOVE_FB(&edits, found);
 			}
 
 			// update windows as highlights will  have changed
@@ -243,14 +243,14 @@ void handle_edit_keys(int k){
             // if it's the same as the underlying file then get rid of any edit map
             if( k == app.map[hex.v_start + idx]){
 				search.offset = (size_t)(hex.v_start + idx);
-				found = RB_FIND(FByteTree, &edits, &search);
+				found = RB_FIND(edit_tree, &edits, &search);
 				if (found) {
-					RB_REMOVE(FByteTree, &edits, found);
+					RB_REMOVE_FB(&edits, found);
 				}
 
             }
             else {  // push the change onto the edit map
-				RB_INSERT(FByteTree, &edits, hex.v_start + idx, (unsigned char)k);
+				RB_INSERT_FB(&edits, hex.v_start + idx, (unsigned char)k);
                 
             }
             valid_edit = true;
@@ -265,7 +265,7 @@ void handle_edit_keys(int k){
             // if there's an existing change, we need to apply this nibble to that so that we 
             // can compare a byte that's had a hi & low edit done to it
 			search.offset = (size_t)(hex.v_start + idx);
-			found = RB_FIND(FByteTree, &edits, &search);
+			found = RB_FIND(edit_tree, &edits, &search);
 			if (found)
             	full_edit_byte = found->byte;
         	else 
@@ -280,13 +280,13 @@ void handle_edit_keys(int k){
             if( full_edit_byte == full_file_byte){
                 // if it is, delete any change that's stored
 				search.offset = (size_t)(hex.v_start + idx);
-				found = RB_FIND(FByteTree, &edits, &search);
+				found = RB_FIND(edit_tree, &edits, &search);
 				if (found) {
-					RB_REMOVE(FByteTree, &edits, found);
+					RB_REMOVE_FB(&edits, found);
 				}
 
             } else { //otherwise, push the change
-				RB_INSERT(FByteTree, &edits, hex.v_start + idx, full_edit_byte);
+				RB_INSERT_FB(&edits, hex.v_start + idx, full_edit_byte);
 
             }
             valid_edit = true;

@@ -76,7 +76,7 @@ void save_changes(void){
 	else if(popup_question("Are you sure you want to save changes?",
 			"This action can not be undone (y/n)", PTYPE_YN)){
 	
-		RB_FOREACH(nod, FByteTree, &edits) {
+		RB_FOREACH(nod, edit_tree, &edits) {
 			app.map[nod->offset] = nod->byte;
 		}
 

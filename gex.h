@@ -19,7 +19,7 @@
 #include <assert.h>
 #include "rbtree.h"
 
-#define GEX_VERSION "1.5.0"
+#define GEX_VERSION "1.5.1"
 
 // keys we need that aren't already defined by ncurses
 #define KEY_ESCAPE 27
@@ -116,12 +116,6 @@ extern MEVENT event;
 
 extern struct FByte search;
 extern struct FByte *found, *nod;
-
-
-// snprintf(tmp, 200, "msg %lu %d", app.fsize , hex.grid); DP(tmp); 
-
-
-
 
 // this needs to be last as it relies on the typedefs above
 #include "gex_helper_funcs.h"

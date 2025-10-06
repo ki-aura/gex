@@ -82,9 +82,9 @@ void refresh_status(void) {
 	mvwprintw(status.win, 1, 0, "Grid offset %lu-%lu Screen:%dx%d Grid:%dx%d=%d           ", 
 			hex.v_start, hex.v_start+hex.grid-1, app.rows, app.cols, ascii.width, hex.height, hex.grid);
 	mvwprintw(status.win, 2, 0, 
-			"cr%02d cc%02d cd%02d Hwin%d hinib%d lk%d lek%d chg%0d         ",
+			"cr%02d cc%02d cd%02d Hwin?%d hinib?%d lk%d lek%d chg%0d rbe?%d        ",
 			hex.cur_row, hex.cur_col, hex.cur_digit, app.in_hex, hex.is_hinib, 
-			app.lastkey, app.lasteditkey, RB_SIZE());
+			app.lastkey, app.lasteditkey, RB_SIZE(), RB_EMPTY(&edits));
 	box(status.border, 0, 0);
 	wnoutrefresh(status.border);
 	wnoutrefresh(status.win);
@@ -101,7 +101,7 @@ void refresh_grids(void){
 		byte_to_nibs(app.map[hex.v_start + offset], &hinib, &lonib);
 		// check if there's an edit for this char
 		search.offset = (size_t)(hex.v_start + offset);
-		found = RB_FIND(FByteTree, &edits, &search);
+		found = RB_FIND(edit_tree, &edits, &search);
 		if (found) {
 			// get the changed byte
 			chg=true;
