@@ -234,7 +234,8 @@ signal(SIGTERM, final_close);
         "ABANDON_Changes  (a)",
         "GOTO_Byte        (g)",
         "INSERT_Bytes     (i)",
-        "DELETE_Bytes     (d)"
+        "DELETE_Bytes     (d)",
+        "Test Debug       (t)"
     };
     int mi = sizeof(items)/sizeof(items[0]);
     int highlight = 0;
@@ -244,8 +245,8 @@ signal(SIGTERM, final_close);
     PANEL *menu_panel;
     WINDOW *menu_win;
 
-    int win_height = 10;
-    int win_width  = 24;
+    int win_height = mi + 4; // box + 2 header lines
+    int win_width  = strlen(items[0]) + 4; // box + space either side
     int starty = (LINES - win_height) / 2;
     int startx = (COLS - win_width) / 2;
 
@@ -287,6 +288,8 @@ signal(SIGTERM, final_close);
                 choice = 4; break;
             case 'd': case 'D':
                 choice = 5; break;
+            case 't': case 'T':
+                choice = 6; break;
         }
         if (choice != -1) break; // break from do loop if valid choice
                     
@@ -303,6 +306,7 @@ signal(SIGTERM, final_close);
         case 3: handle_scrolling_movement(KEY_MOVE); break;
         case 4: insert_bytes(); break;
         case 5: delete_bytes(); break;
+        case 6: example_dynamic_rbtree(); break;
         default: break;
     }
 
@@ -311,4 +315,47 @@ signal(SIGTERM, final_close);
     update_all_windows();
     handle_global_keys(KEY_RESIZE);
     return FALSE;
+}
+
+void example_dynamic_rbtree(void)
+{
+	// create a new tree
+	struct edit_tree fred;
+	RB_INIT(&fred);
+	
+	struct FByte *new_node;	// this will be malloc'd for each new node
+	struct FByte s, *f; 	// s for search criteria, *f pointer to found node
+	char oo[3] = "xy"; 		// update xy to ab and prove it worked
+	
+	new_node = malloc(sizeof(*new_node));
+	new_node->offset = 7;
+	// This next line BAD programming, but functionally equivalent of -> by 
+	// dereferencing new_node and then using the . operator. Brackets are required as
+	// . has a higher operator order than *, so otherwise it would not compile
+	(*new_node).byte = 'a';  
+	RB_INSERT(edit_tree,&fred,new_node);
+	
+	new_node = malloc(sizeof(*new_node));
+	new_node->offset = 4;
+	new_node->byte = 'b';
+	RB_INSERT(edit_tree,&fred,new_node);
+	
+	s.offset = 7;
+	f = RB_FIND(edit_tree, &fred, &s);
+	if (f) {
+		oo[0] = f->byte; 
+		RB_REMOVE(edit_tree, &fred, f);
+		free(f);
+	}
+	
+	s.offset = 4;
+	f = RB_FIND(edit_tree, &fred, &s);
+	if (f) {
+		oo[1] = f->byte; 
+		RB_REMOVE(edit_tree, &fred, f);
+		free(f);
+	}
+	
+	popup_question(oo, "", PTYPE_CONTINUE);
+
 }

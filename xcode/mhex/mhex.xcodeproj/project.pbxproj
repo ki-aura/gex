@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C97624392E95A414007BEC30 /* rbtree.c in Sources */ = {isa = PBXBuildFile; fileRef = C97624382E95A414007BEC30 /* rbtree.c */; };
 		C9D6E6A72E7168BF00602D4C /* gex.c in Sources */ = {isa = PBXBuildFile; fileRef = C9D6E69B2E7168BF00602D4C /* gex.c */; };
 		C9D6E6A82E7168BF00602D4C /* gex_helper_funcs.c in Sources */ = {isa = PBXBuildFile; fileRef = C9D6E69D2E7168BF00602D4C /* gex_helper_funcs.c */; };
 		C9D6E6AB2E7168BF00602D4C /* file_handling.c in Sources */ = {isa = PBXBuildFile; fileRef = C9D6E6992E7168BF00602D4C /* file_handling.c */; };
@@ -27,6 +28,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C97624372E95A414007BEC30 /* rbtree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = rbtree.h; path = /Users/matt/Projects/gex/rbtree.h; sourceTree = "<absolute>"; };
+		C97624382E95A414007BEC30 /* rbtree.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = rbtree.c; path = /Users/matt/Projects/gex/rbtree.c; sourceTree = "<absolute>"; };
+		C976243A2E95A4E2007BEC30 /* ttree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ttree.h; path = /Users/matt/Projects/gex/ttree.h; sourceTree = "<absolute>"; };
 		C9D6E68C2E71678F00602D4C /* mhex */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mhex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9D6E6982E7168BF00602D4C /* file_handling.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = file_handling.h; path = /Users/matt/Projects/gex/file_handling.h; sourceTree = "<absolute>"; };
 		C9D6E6992E7168BF00602D4C /* file_handling.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = file_handling.c; path = /Users/matt/Projects/gex/file_handling.c; sourceTree = "<absolute>"; };
@@ -36,18 +40,9 @@
 		C9D6E69D2E7168BF00602D4C /* gex_helper_funcs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = gex_helper_funcs.c; path = /Users/matt/Projects/gex/gex_helper_funcs.c; sourceTree = "<absolute>"; };
 		C9D6E6A02E7168BF00602D4C /* keyb_man.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = keyb_man.h; path = /Users/matt/Projects/gex/keyb_man.h; sourceTree = "<absolute>"; };
 		C9D6E6A12E7168BF00602D4C /* keyb_man.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = keyb_man.c; path = /Users/matt/Projects/gex/keyb_man.c; sourceTree = "<absolute>"; };
-		C9D6E6A22E7168BF00602D4C /* khash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = khash.h; path = /Users/matt/Projects/gex/khash.h; sourceTree = "<absolute>"; };
 		C9D6E6A52E7168BF00602D4C /* win_man.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = win_man.h; path = /Users/matt/Projects/gex/win_man.h; sourceTree = "<absolute>"; };
 		C9D6E6A62E7168BF00602D4C /* win_man.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = win_man.c; path = /Users/matt/Projects/gex/win_man.c; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		C9D6E68E2E71678F00602D4C /* mhex */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = mhex;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		C9D6E6892E71678F00602D4C /* Frameworks */ = {
@@ -65,16 +60,17 @@
 			children = (
 				C9D6E6982E7168BF00602D4C /* file_handling.h */,
 				C9D6E6992E7168BF00602D4C /* file_handling.c */,
-				C9D6E69A2E7168BF00602D4C /* gex.h */,
-				C9D6E69B2E7168BF00602D4C /* gex.c */,
 				C9D6E69C2E7168BF00602D4C /* gex_helper_funcs.h */,
 				C9D6E69D2E7168BF00602D4C /* gex_helper_funcs.c */,
+				C9D6E69A2E7168BF00602D4C /* gex.h */,
+				C9D6E69B2E7168BF00602D4C /* gex.c */,
 				C9D6E6A02E7168BF00602D4C /* keyb_man.h */,
 				C9D6E6A12E7168BF00602D4C /* keyb_man.c */,
-				C9D6E6A22E7168BF00602D4C /* khash.h */,
+				C97624372E95A414007BEC30 /* rbtree.h */,
+				C97624382E95A414007BEC30 /* rbtree.c */,
+				C976243A2E95A4E2007BEC30 /* ttree.h */,
 				C9D6E6A52E7168BF00602D4C /* win_man.h */,
 				C9D6E6A62E7168BF00602D4C /* win_man.c */,
-				C9D6E68E2E71678F00602D4C /* mhex */,
 				C9D6E68D2E71678F00602D4C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,9 +97,6 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				C9D6E68E2E71678F00602D4C /* mhex */,
 			);
 			name = mhex;
 			packageProductDependencies = (
@@ -155,6 +148,7 @@
 				C9D6E6AB2E7168BF00602D4C /* file_handling.c in Sources */,
 				C9D6E6AC2E7168BF00602D4C /* keyb_man.c in Sources */,
 				C9D6E6AD2E7168BF00602D4C /* win_man.c in Sources */,
+				C97624392E95A414007BEC30 /* rbtree.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -169,7 +163,7 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_MODULES = NO;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
@@ -232,7 +226,7 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_MODULES = NO;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;

@@ -76,7 +76,7 @@
  * - All iteration macros expand to for-loops; SAFE variants allow node deletion inside loop.
  */
 
-#include "tree.h"   /* BSD-style sys/tree.h, vendored for portability */
+#include "ttree.h"   /* BSD-style sys/tree.h, vendored for portability */
 
 /* -------------------------- Node Definition -------------------------- */
 
@@ -100,8 +100,8 @@ RB_PROTOTYPE(edit_tree, FByte, fb_key, off_cmp)
 
 
 /* Undef macros to force use of own wrappers */
-#undef RB_INSERT
-#undef RB_REMOVE
+//#undef RB_INSERT
+//#undef RB_REMOVE
 
 // Replacement Insert/Remove functions
 struct FByte *RB_INSERT_FB(struct edit_tree *head, size_t offs, unsigned char byt);

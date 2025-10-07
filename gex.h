@@ -105,6 +105,7 @@ bool initial_setup(int argc, char *argv[]);
 void final_close(int signum);
 clickwin get_window_click(int *row, int *col);
 bool create_main_menu(void);
+void example_dynamic_rbtree(void);
 
 
 extern appdef app;
