@@ -87,8 +87,8 @@ const char *get_filename(const char *path){
 // ------------------Memory safe allocation helpers ----------
 void *xmalloc(size_t size) {
     void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fprintf(stderr, "Fatal: Out of memory.\n");
+    if (ptr == NULL && size>0) {
+        fprintf(stderr, "Fatal: Out of memory (malloc %zu bytes).\n", size);
         exit(EXIT_FAILURE);
     }
     return ptr;
@@ -96,14 +96,23 @@ void *xmalloc(size_t size) {
 
 void *xcalloc(size_t count, size_t size) {
     void *ptr = calloc(count, size);
-    if (ptr == NULL) {
-        fprintf(stderr, "Fatal: Out of memory.\n");
+    if (ptr == NULL && count>0 && size>0) {
+        fprintf(stderr, "Fatal: Out of memory (calloc %zu count %zu bytes).\n", count, size);
         exit(EXIT_FAILURE);
     }
     return ptr;
 }
 
-
+void *xrealloc(void *ptr, size_t size) {
+    void *new_ptr = realloc(ptr, size);
+    // If realloc fails, the original block pointed to by ptr is left unchanged.
+    if (new_ptr == NULL && size > 0) {
+        fprintf(stderr, "Fatal: Out of memory (realloc %zu bytes).\n", size);
+        free(ptr); // we can at least free up the memory currently pointed to
+        exit(EXIT_FAILURE);
+    }
+    return new_ptr;
+}
 
 
 

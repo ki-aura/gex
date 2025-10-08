@@ -246,7 +246,7 @@ signal(SIGTERM, final_close);
     WINDOW *menu_win;
 
     int win_height = mi + 4; // box + 2 header lines
-    int win_width  = strlen(items[0]) + 4; // box + space either side
+    int win_width  = (int)strlen(items[0]) + 4; // box + space either side
     int starty = (LINES - win_height) / 2;
     int startx = (COLS - win_width) / 2;
 
