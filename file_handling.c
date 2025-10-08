@@ -110,8 +110,7 @@ void abandon_changes(void){
 // helper: build temp filename "<fname>.gex"
 static char *make_temp_name(const char *fname) {
     size_t len = strlen(fname) + 8;
-    char *tmpnam = malloc(len);
-    if (!tmpnam) return NULL;
+    char *tmpnam = xmalloc(len);
     snprintf(tmpnam, len, "%s.gextmp", fname);
     return tmpnam;
 }
@@ -152,8 +151,7 @@ int file_insert(off_t f_offset, size_t nbytes) {
     }
 
     // write inserted bytes
-    char *zeros = calloc(1, nbytes);
-    if (!zeros) goto out_close;
+    char *zeros = xcalloc(1, nbytes);
     if (write(tfd, zeros, nbytes) != (ssize_t)nbytes) { free(zeros); goto out_close; }
     free(zeros);
 

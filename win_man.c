@@ -155,3 +155,70 @@ void update_cursor(void){
 	doupdate(); 
 }
 
+unsigned long  popup_question(const char *qline1, const char *qline2, popup_types pt) {
+	int ch, qlen, oldcs1, oldcs2;
+	char *endptr;
+	unsigned long answer;
+
+	// make sure we size to the longer of the question lines (and at least 21 so a 20byte long can be typed)
+	qlen = (int)((strlen(qline1) > strlen(qline2)) ? strlen(qline1) : strlen(qline2));
+	qlen = (qlen < 21) ? 21 : qlen;
+	// Create window and panel
+	WINDOW *popup = newwin(4, (qlen+2), ((app.rows - 4) / 2), 
+					((app.cols - (qlen+2)) / 2));
+	PANEL  *panel = new_panel(popup);
+	keypad(popup, TRUE); // Enable keyboard input for the window
+	
+	// Draw border and message
+	box(popup, 0, 0);
+	wattron(popup, A_BOLD);
+	mvwprintw(popup, 1, 1, "%s", qline1);
+	mvwprintw(popup, 2, 1, "%s", qline2);
+	wattroff(popup, A_BOLD);
+	
+	// Show it
+	oldcs1 = curs_set(0);
+	update_panels();
+	doupdate();
+	
+	switch(pt){
+	case PTYPE_YN:	// don't end until y or n typed
+		do {
+			ch = wgetch(popup);
+		} while ((ch != 'y') && (ch != 'n'));
+		answer = (unsigned long)(ch == 'y');
+		break;
+
+	case PTYPE_CONTINUE: 	// end after any key
+		wgetch(popup);	
+		answer = (unsigned long)true;
+		break;
+	
+	case PTYPE_UNSIGNED_LONG:	// get a new file location (or default to 0 if invalid input)
+		// Move the cursor to the input position and get input
+		echo(); oldcs2 = curs_set(2);
+		mvwgetnstr(popup, 2, 1, tmp, 16); // 20 is max length of a 64bit unsigned long
+		noecho(); curs_set(oldcs2);
+		
+		// Convert string to unsigned long using strtoul
+		errno = 0; // Clear errno before the call
+		answer = strtoul(tmp, &endptr, 10);
+		
+		// Check for conversion errors
+		if (tmp[0] == '-' || endptr == tmp || *endptr != '\0' || errno == ERANGE)
+			answer = 0;
+		break;
+	}
+
+	// Clean up panel
+	curs_set(oldcs1);
+	hide_panel(panel);
+	update_panels();
+	doupdate();
+	del_panel(panel);
+	delwin(popup);
+
+	return answer;
+}
+
+

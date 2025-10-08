@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "rbtree.h"
+#include "gex_helper_funcs.h"
 
 
 /* -------------------------- Global Trees -------------------------- */
@@ -12,7 +13,7 @@ int edit_tree_size = 0;
 
 struct FByte *RB_INSERT_FB(struct edit_tree *head, size_t offs, unsigned char byt) {
 	struct FByte *node;
-	node = malloc(sizeof(*node));
+	node = xmalloc(sizeof(*node));
 	node->offset = offs;
 	node->byte = byt;
 
@@ -27,7 +28,7 @@ struct FByte *RB_REMOVE_FB(struct edit_tree *head, struct FByte *node) {
     	edit_tree_size--;
     	free(node);
     }
-    return NULL;
+    return NULL; 
 }
 
 void RB_CLEAR_TREE(struct edit_tree *head) {

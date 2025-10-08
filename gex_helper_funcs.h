@@ -1,17 +1,21 @@
 #ifndef GEX_HELPER_FUNCS_H
 #define GEX_HELPER_FUNCS_H
 
+#include <stdbool.h>
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // general
 ///////////////////////////////////////////////////////////////////////////////
+// ------------------Memory safe allocation helpers ----------
+void *xmalloc(size_t size);
+void *xcalloc(size_t count, size_t size);
 
-
-unsigned long  popup_question(const char *qline1, const char *qline2, popup_types pt);
-char byte_to_ascii(unsigned char b);
 
 ///////////////////////////////////////////////////////////////////////////////
 // ascii / byte / nibble manipulation
 ///////////////////////////////////////////////////////////////////////////////
+char byte_to_ascii(unsigned char b);
 
 // t[3] = nibs_to_byte('4', '6');
 unsigned char nibs_to_byte(const char hi, const char lo);
@@ -43,25 +47,4 @@ unsigned long cursor_full_file_offset(void);
 const char *get_filename(const char *path);
 
 #endif 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
