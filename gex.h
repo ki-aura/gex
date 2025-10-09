@@ -2,9 +2,8 @@
 #define GEX_MAIN_H
 
 #include <sys/stat.h> // Provides functions for retrieving and manipulating file status (e.g., stat, fstat)
-
-#include <glob.h>     // Provides pattern matching for filenames (pathname expansion)
-#include <regex.h>    // Provides functions for regular expression matching
+//#include <glob.h>     // Provides pattern matching for filenames (pathname expansion)
+//#include <regex.h>    // Provides functions for regular expression matching
 #include <assert.h>   // Provides the assert macro for debugging and checking invariant conditions
 #include <ctype.h>    // Provides functions for character classification (e.g., isalpha, isdigit) and conversion
 #include <errno.h>    // Defines macros for reporting error conditions (e.g., errno, EACCES)
@@ -25,7 +24,7 @@
 
 #include "rbtree.h"
 
-#define GEX_VERSION "1.5.1"
+#define GEX_VERSION "2.1.0"
 
 // keys we need that aren't already defined by ncurses
 #define KEY_ESCAPE 27

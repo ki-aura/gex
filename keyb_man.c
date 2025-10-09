@@ -244,13 +244,11 @@ void handle_edit_keys(int k){
             if( k == app.map[hex.v_start + idx]){
 				search.offset = (size_t)(hex.v_start + idx);
 				found = RB_FIND(edit_tree, &edits, &search);
-				if (found) {
+				if (found) 
 					RB_REMOVE_FB(&edits, found);
-				}
-
             }
             else {  // push the change onto the edit map
-				RB_INSERT_FB(&edits, hex.v_start + idx, (unsigned char)k);
+				RB_INSERT_FB(&edits, (size_t)(hex.v_start + idx), (unsigned char)k);
                 
             }
             valid_edit = true;
@@ -281,13 +279,11 @@ void handle_edit_keys(int k){
                 // if it is, delete any change that's stored
 				search.offset = (size_t)(hex.v_start + idx);
 				found = RB_FIND(edit_tree, &edits, &search);
-				if (found) {
+				if (found) 
 					RB_REMOVE_FB(&edits, found);
-				}
-
             } else { //otherwise, push the change
-				RB_INSERT_FB(&edits, hex.v_start + idx, full_edit_byte);
-
+				found = RB_INSERT_FB(&edits, (size_t)(hex.v_start + idx), full_edit_byte);
+				if(found != NULL) found->byte = full_edit_byte;
             }
             valid_edit = true;
         }

@@ -18,17 +18,22 @@ struct FByte *RB_INSERT_FB(struct edit_tree *head, size_t offs, unsigned char by
 	node->byte = byt;
 
     struct FByte *res = edit_tree_RB_INSERT(head, node);
-    if (res == NULL) edit_tree_size++;
-    return res;
+	if (res == NULL) {
+		edit_tree_size++;
+		return node;   // inserted successfully
+	} else {
+		free(node);    // duplicate key, free the new one
+		return res;    // return existing node
+	}
 }
 
 struct FByte *RB_REMOVE_FB(struct edit_tree *head, struct FByte *node) {
     struct FByte *res = edit_tree_RB_REMOVE(head, node);
     if (res != NULL) {
     	edit_tree_size--;
-    	free(node);
+    	free(res);
     }
-    return NULL; 
+    return res; 
 }
 
 void RB_CLEAR_TREE(struct edit_tree *head) {

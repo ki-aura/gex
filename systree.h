@@ -24,8 +24,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	_SYS_TTREE_H_
-#define	_SYS_TTREE_H_
+#ifndef	_SYSTREE_H_
+#define	_SYSTREE_H_
 
 #ifndef NULL
 #if !defined(__cplusplus)

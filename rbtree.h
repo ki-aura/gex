@@ -76,7 +76,7 @@
  * - All iteration macros expand to for-loops; SAFE variants allow node deletion inside loop.
  */
 
-#include "ttree.h"   /* BSD-style sys/tree.h, vendored for portability */
+#include "systree.h"   /* BSD-style sys/tree.h, vendored for portability */
 
 /* -------------------------- Node Definition -------------------------- */
 

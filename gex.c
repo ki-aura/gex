@@ -1,21 +1,5 @@
-#include <assert.h>   // Provides the assert macro for debugging and checking invariant conditions
-#include <ctype.h>    // Provides functions for character classification (e.g., isalpha, isdigit) and conversion
-#include <errno.h>    // Defines macros for reporting error conditions (e.g., errno, EACCES)
-#include <fcntl.h>    // Provides file control functions (e.g., open, creat, file status flags)
-#include <limits.h>   // Defines characteristics of integral types (e.g., INT_MAX, CHAR_BIT)
-#include <ncurses.h>  // Provides functions for terminal-independent screen-handling and text-based UIs
-#include <panel.h>    // Provides functions for stacking and manipulating ncurses windows as panels
-#include <regex.h>    // Provides functions for regular expression matching
-#include <signal.h>   // Provides functions and constants for signal handling (e.g., kill, raise)
-#include <stdarg.h>   // Provides support for functions with variable numbers of arguments (variadic functions)
-#include <stdbool.h>  // Defines the boolean type bool and the macros true and false
-#include <stdint.h>   // Defines exact-width integer types (e.g., int32_t, uint64_t)
-#include <stdio.h>    // Provides standard input/output functions (e.g., printf, scanf, file I/O)
-#include <stdlib.h>   // Provides general utilities (e.g., memory allocation, random numbers, process control)
-#include <string.h>   // Provides functions for manipulating strings and memory blocks (e.g., strcpy, memcpy)
-
 #include "gex.h"
-#include "ttree.h"
+#include "systree.h"
 #include "rbtree.h"
 #include "gex_helper_funcs.h"
 #include "keyb_man.h"
