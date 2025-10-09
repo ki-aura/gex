@@ -9,7 +9,7 @@ endif
 # Common flags
 CFLAGS_COMMON = 
 TARGET        = gex
-SRC           = gex.c file_handling.c gex_helper_funcs.c keyb_man.c win_man.c rbtree.c
+SRC           = gex.c file_handling.c gex_helper_funcs.c keyb_man.c win_man.c
 OBJ           = $(SRC:.c=.o)
 
 # NCURSES flags

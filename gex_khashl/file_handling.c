@@ -1,25 +1,4 @@
-#include <fcntl.h>    // Provides file control functions (e.g., open, creat, file status flags)
-#include <assert.h>   // Provides the assert macro for debugging and checking invariant conditions
-#include <ctype.h>    // Provides functions for character classification (e.g., isalpha, isdigit) and conversion
-#include <errno.h>    // Defines macros for reporting error conditions (e.g., errno, EACCES)
-#include <limits.h>   // Defines characteristics of integral types (e.g., INT_MAX, CHAR_BIT)
-#include <ncurses.h>  // Provides functions for terminal-independent screen-handling and text-based UIs
-#include <stdarg.h>   // Provides support for functions with variable numbers of arguments (variadic functions)
-#include <stdbool.h>  // Defines the boolean type bool and the macros true and false
-#include <stdint.h>   // Defines exact-width integer types (e.g., int32_t, uint64_t)
-#include <stdio.h>    // Provides standard input/output functions (e.g., printf, scanf, file I/O)
-#include <stdlib.h>   // Provides general utilities (e.g., memory allocation, random numbers, process control)
-#include <string.h>   // Provides functions for manipulating strings and memory blocks (e.g., strcpy, memcpy)
-#include <sys/mman.h> // Provides memory management declarations (e.g., mmap, munmap)
-#include <sys/stat.h> // Provides functions for retrieving and manipulating file status (e.g., stat, fstat)
-#include <unistd.h>   // Provides access to POSIX operating system API (e.g., fork, exec, read, close)
-
-#include "file_handling.h"
-#include "rbtree.h"
 #include "gex.h"
-#include "gex_helper_funcs.h"
-#include "win_man.h"
-
 
 bool helperfunction_open_file(void){
 	// try to open it
@@ -90,21 +69,55 @@ void close_file(void)
 	close(app.fd);
 }
 
+// Comparison for qsort: by int key
+typedef struct {
+	unsigned long key;
+	unsigned char val; 
+} kv_t;
+
+int cmp_key(const void *a, const void *b) {
+    const kv_t *pa = (const kv_t*)a;
+    const kv_t *pb = (const kv_t*)b;
+    if (pa->key < pb->key) return -1;
+    if (pa->key > pb->key) return 1;
+    return 0;
+}
+ 
 void save_changes(void){
-	if (RB_SIZE() == 0)
+	if (kh_size(app.edmap) == 0)
 		popup_question("No changes made",
 			"Press any key to continue", PTYPE_CONTINUE);
 	else if(popup_question("Are you sure you want to save changes?",
 			"This action can not be undone (y/n)", PTYPE_YN)){
 	
-		RB_FOREACH(nod, edit_tree, &edits) {
-			app.map[nod->offset] = nod->byte;
+		// Allocate array to hold all kv pairs
+		size_t n = kh_size(app.edmap);
+		kv_t *arr = malloc(sizeof(kv_t) * n);
+	
+		// Copy hash table entries into array
+		size_t idx = 0;
+		khint_t k;
+		kh_foreach(app.edmap, k) {
+			if (kh_exist(app.edmap, k)) {
+				arr[idx].key = kh_key(app.edmap, k);
+				arr[idx].val = kh_val(app.edmap, k);
+				idx++;
+			}
+		}
+	
+		// Sort array by key
+		qsort(arr, n, sizeof(kv_t), cmp_key);
+	
+		// Apply changes in sorted order
+		for (size_t i = 0; i < n; i++) {
+			app.map[arr[i].key] = arr[i].val;
 		}
 
 		// and sync it out
 		msync(app.map, app.fsize, MS_SYNC);
 		// clear change history as these are now permanent
-		RB_CLEAR_TREE(&edits);
+		kh_clear(app.edmap);
+        free(arr);
         
 		// refresh to get rid of old change highlights
 		update_all_windows();
@@ -113,14 +126,14 @@ void save_changes(void){
 }
 
 void abandon_changes(void){
-    if (RB_SIZE()== 0)
+    if (kh_size(app.edmap) == 0)
         popup_question("No changes to abandon",
             "Press any key to continue", PTYPE_CONTINUE);
     else if(popup_question("Are you sure you want to abandon changes?",
             "This action can not be undone (y/n)", PTYPE_YN)){
     
         // abandon changes
-        RB_CLEAR_TREE(&edits);
+        kh_clear(app.edmap);
         // refresh to get rid of old change highlights
         update_all_windows();
         handle_global_keys(KEY_REFRESH);
@@ -131,7 +144,8 @@ void abandon_changes(void){
 // helper: build temp filename "<fname>.gex"
 static char *make_temp_name(const char *fname) {
     size_t len = strlen(fname) + 8;
-    char *tmpnam = xmalloc(len);
+    char *tmpnam = malloc(len);
+    if (!tmpnam) return NULL;
     snprintf(tmpnam, len, "%s.gextmp", fname);
     return tmpnam;
 }
@@ -172,7 +186,8 @@ int file_insert(off_t f_offset, size_t nbytes) {
     }
 
     // write inserted bytes
-    char *zeros = xcalloc(1, nbytes);
+    char *zeros = calloc(1, nbytes);
+    if (!zeros) goto out_close;
     if (write(tfd, zeros, nbytes) != (ssize_t)nbytes) { free(zeros); goto out_close; }
     free(zeros);
 
@@ -264,7 +279,7 @@ out_free:
 
 void insert_bytes(void){
 unsigned long byteins, ins_offset;
-    if (RB_SIZE() > 0)
+    if (kh_size(app.edmap) > 0)
         popup_question("Save changes before inserting bytes",
             "Press any key to continue", PTYPE_CONTINUE);
     else {
@@ -289,7 +304,7 @@ unsigned long byteins, ins_offset;
 
 void delete_bytes(void){
 unsigned long bytedel, del_offset, max_pos;
-    if (RB_SIZE() > 0)
+    if (kh_size(app.edmap) > 0)
         popup_question("Save changes before deleting bytes",
             "Press any key to continue", PTYPE_CONTINUE);
     else {
