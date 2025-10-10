@@ -85,7 +85,7 @@ char *mem_cat(char *base, char* cat)
 	
 	// cat could be null; if so return base
 	if(!cat) {
-		DD("nothing to cat"); 
+		assert("nothing to cat"); 
 		return base;
 	}
 	
@@ -96,7 +96,7 @@ char *mem_cat(char *base, char* cat)
 		if (!tmp) return NULL;
 		strcpy(tmp, cat);
 		//no memory to free as base was NULL
-		DD("base was null, memory allocated");
+		assert("base was null, memory allocated");
 		return tmp;
 	
 	} else { // base contains a string
@@ -126,7 +126,7 @@ void mem_cat2(char **base, char* cat)
 	
 	// cat could be null; if so nothing to do
 	if(!cat) {
-		DD("nothing to cat"); 
+		assert("nothing to cat"); 
 		return;
 	}
 	
@@ -137,7 +137,7 @@ void mem_cat2(char **base, char* cat)
 		if (!base) return;
 		strcpy(*base, cat);
 		//no memory to free as base was NULL
-		DD("base was null, memory allocated");
+		assert("base was null, memory allocated");
 		return;
 	
 	} else { // base contains a string
@@ -159,16 +159,16 @@ void mem_cat2(char **base, char* cat)
 char *mem_set(char *targ, const char* cop)
 {
 	if(targ){
-		DD("targ not NULL"); 
+		assert("targ not NULL"); 
 		return NULL;
 	}
 	
 	if(!cop){
-		DD("cop is NULL"); 
+		assert("cop is NULL"); 
 		return NULL;
 	}
 	
-	// DD("got this far");
+	// assert("got this far");
 	targ = malloc(strlen(cop)+1);
 	strcpy(targ, cop);
 	return targ;
