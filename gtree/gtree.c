@@ -465,11 +465,14 @@ while (sp > 0) {
     // Print summary report
     char hsize[32];
     human_size(final_report.TOTAL_file_size, hsize, sizeof(hsize));
-    printf( "Total Number of Files: %zu (of which %zu are linked)\n"
-    		"Total File Size: %s\n"
-    		"Total Number of Directories traversed %zu (of which %zu are linked)\n", 
-    		final_report.TOTAL_file_count, final_report.TOTAL_linked_files, hsize, 
+    printf( "\nTotal Number of Directories traversed %zu (of which %zu are linked)\n", 
     		final_report.TOTAL_directories, final_report.TOTAL_linked_directories);
+ 
+    if(opts.show_file_stats)
+		printf( "Total Number of Files: %zu (of which %zu are linked)\n"
+				"Total File Size: %s\n",
+				final_report.TOTAL_file_count, final_report.TOTAL_linked_files, hsize);
+	 
 
     return 0;
 }
