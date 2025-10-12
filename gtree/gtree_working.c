@@ -7,11 +7,200 @@
 #include <libgen.h>     // For basename if needed (not used here)
 #include <unistd.h>     // For readlink (POSIX)
 #include <inttypes.h>   // For intmax_t
-#include "gtree.h"
-#include "visit_hash.h"
-#include "option_parsing.h"
-#include "memsafe.h"
 
+// Fallback maximum path length if PATH_MAX is not defined by the system
+#ifndef PATH_MAX
+#define PATH_MAX 1024   
+#endif
+
+#define TH_VERSION "1.1.0"
+// Defines the maximum depth and also the size of the explicit stack array
+#define MAX_DEPTH 1024   
+
+// -----------------------------------------------------
+// ------------------ Definitions ------------------
+// -----------------------------------------------------
+
+// Node structure to hold subdirectory info in a linked list.
+// Used to store subdirectories discovered in a directory *before* traversing them.
+// This decouples the scanning phase from the descending phase.
+typedef struct SubDirNode {
+    char path[PATH_MAX];       // Full path of the subdirectory (e.g., "/home/user/dir/subdir")
+    bool is_symlink;           // True if this directory entry itself is a symbolic link
+    char sym_path[PATH_MAX];   // Target path if symlink (e.g., "../../otherdir")
+    struct SubDirNode *next;   // Pointer to next subdirectory (linked list for children)
+} SubDirNode;
+
+// Frame structure representing one directory level in the explicit stack.
+// This structure replaces the 'stack frame' of a recursive function call.
+typedef struct DirFrame {
+    char path[PATH_MAX];         // Path of this directory
+    DIR *dir;                    // DIR* stream for reading entries with readdir
+    SubDirNode *subdirs;         // Head of the linked list of subdirectories found (Phase 1 result)
+    SubDirNode *current;         // Pointer to the current subdir being processed (iterator for Phase 2)
+    int depth;                   // Depth in the directory tree (0 = starting directory)
+    size_t dir_file_count;       // Number of regular files in this specific directory
+    off_t dir_file_size;         // Cumulative size of regular files in this specific directory
+    bool has_sibling[MAX_DEPTH+1]; // Used to track tree branches for formatted output (│/└/├)
+    bool is_last;                // True if this directory is the last among its siblings (for print formatting)
+} DirFrame;
+
+// -------------------- Loop Detection: visited directories linked list --------------------
+// Stores inode/device ID pairs of all directories that have been successfully entered.
+// Used to detect and avoid infinite loops when following symlinks.
+typedef struct VisitedNode {
+    dev_t st_dev;               // Device ID (unique per filesystem)
+    ino_t st_ino;               // Inode number (unique per file on a filesystem)
+    struct VisitedNode *next;   // Next node in visited list
+} VisitedNode;
+
+// -------------------------------- Final Report -------------------------------
+// Holds summary stats accumulated during the traversal.
+typedef struct ActivityReport {
+	size_t TOTAL_file_count;           // Total number of regular files
+	size_t TOTAL_linked_files;         // Number of regular files that are symbolic links
+	off_t TOTAL_file_size;             // Total size of all regular files
+	size_t TOTAL_directories;          // Total directories successfully traversed
+	size_t TOTAL_linked_directories;   // Symlinked directories encountered
+} ActivityReport;
+
+// ------------------Memory safe allocation helpers (Wrapper Functions) ----------
+// Wrappers around standard memory allocation functions (malloc/calloc/realloc)
+// that perform error checking and exit the program on failure.
+// This is a common pattern for robust C utilities.
+void *xmalloc(size_t size) {
+    void *ptr = malloc(size);
+    if (ptr == NULL && size>0) {
+        fprintf(stderr, "Fatal: Out of memory (malloc %zu bytes).\n", size);
+        exit(EXIT_FAILURE);
+    }
+    return ptr;
+}
+
+void *xcalloc(size_t count, size_t size) {
+    void *ptr = calloc(count, size);
+    if (ptr == NULL && count>0 && size>0) {
+        fprintf(stderr, "Fatal: Out of memory (calloc %zu count %zu bytes).\n", count, size);
+        exit(EXIT_FAILURE);
+    }
+    return ptr;
+}
+
+void *xrealloc(void *ptr, size_t size) {
+    void *new_ptr = realloc(ptr, size);
+    if (new_ptr == NULL && size > 0) {
+        fprintf(stderr, "Fatal: Out of memory (realloc %zu bytes).\n", size);
+        free(ptr);
+        exit(EXIT_FAILURE);
+    }
+    return new_ptr;
+}
+
+// -----------------------------------------------------
+// ------------------ Options Parsing ------------------
+// -----------------------------------------------------
+
+// Structure for command line option help definitions
+typedef struct {
+    const char *name;
+    const char *help;
+} HelpDef;
+
+// Table for help messages for options
+HelpDef help_table[] = {
+    {"-h",   "Display this help message"},
+	{"-s",   "Show File & Size totals for populated directories"},
+	{"-l",   "Follow Sym-Link directories (disables loop-detection if not specified)"},
+    {"-d N", "Maximum depth (will always run to a minimum of 2)"},
+    {NULL, NULL} // sentinel: marks the end of the array
+};
+
+// List of supported options for getopt(). 'd:' means -d requires an argument.
+const char option_list[] = "hsld:";
+
+// Structure to hold all parsed command-line options
+typedef struct {
+    bool show_help;			// -h
+    bool show_file_stats;	// -s
+    bool follow_links;		// -l
+    int max_depth;   		// -dN
+} Options;
+
+// Parses command line arguments using POSIX getopt() and sets the Options struct.
+void parse_options(int argc, char *argv[], Options *opts, int *first_file_index) {
+    *opts = (Options){0};           // Initialize all fields to 0 / false
+    opts->max_depth = MAX_DEPTH;     // Default max depth
+    int opt;
+    // Loop through options using getopt. getopt returns -1 when no more options are found.
+    while ((opt = getopt(argc, argv, option_list)) != -1) { 
+        switch (opt) {
+            case 'h': opts->show_help = true; break;
+            case 's': opts->show_file_stats = true; break;
+            case 'l': opts->follow_links = true; break;
+            case 'd': {
+                int n = atoi(optarg);        // optarg holds the argument for the current option (-d N)
+                if (n < 2) n = 2;            // Enforce minimum depth
+                if (n > MAX_DEPTH) n = MAX_DEPTH; // Prevent array overflow/extreme depth
+                opts->max_depth = n;
+                break;
+			}
+            default:
+                fprintf(stderr, "Unknown option: -%c\n", optopt);
+                exit(EXIT_FAILURE);
+        }
+    }
+
+    // After getopt finishes, optind is the index of the first non-option argument (the start path).
+    if (optind < argc) *first_file_index = optind;
+	else *first_file_index = -1;  
+}
+
+// Print help message using the help_table
+void show_help(void){
+	fprintf(stderr, "Usage: fs [options] starting_directory \n");
+	fprintf(stderr, "Options:\n");
+	for (HelpDef *opt = help_table; opt->name; opt++) {
+		fprintf(stderr, "  %s\t%s\n", opt->name, opt->help);
+	}
+	fprintf(stderr, "Version %s\n", TH_VERSION);
+}
+
+// ------------------- Visited linked list helpers ------------------
+// Used to prevent infinite loops when following symlinks
+VisitedNode* add_visited(VisitedNode **head, dev_t dev, ino_t ino) {
+    // Allocate new node using the safe allocation wrapper
+    VisitedNode *n = xmalloc(sizeof(VisitedNode));
+    n->st_dev = dev;
+    n->st_ino = ino;
+    // Prepend to the front of the list for O(1) insertion
+    n->next = *head;
+    *head = n;
+    return n;
+}
+
+// Checks if a directory (identified by its unique dev/ino pair) has been visited before.
+bool visited_before(VisitedNode *head, dev_t dev, ino_t ino) {
+    for (VisitedNode *cur = head; cur; cur = cur->next)
+        if (cur->st_dev == dev && cur->st_ino == ino)
+            return true; // Match found
+    return false;
+}
+
+// Frees all memory used by the visited directories linked list.
+void free_visited(VisitedNode *head) {
+    VisitedNode *cur = head, *next;
+    while (cur) { next = cur->next; free(cur); cur = next; }
+}
+
+// Free a linked list of subdirectories (SubDirNode).
+void free_subdirs(SubDirNode *head) {
+    SubDirNode *cur = head, *next;
+    while (cur) { 
+        next = cur->next; 
+        free(cur);
+        cur = next;
+    }
+}
 
 // ----------------- Human readable file size -------------------
 // Converts a size in bytes (off_t) to a human-readable string (e.g., 4.5K, 2.1M).
@@ -92,16 +281,6 @@ DirFrame *Create_Frame(const char *dirPath, int dirDepth, const DirFrame *parent
     return dirptr;
 }
 
-// Free a linked list of subdirectories (SubDirNode).
-void free_subdirs(SubDirNode *head) {
-    SubDirNode *cur = head, *next;
-    while (cur) { 
-        next = cur->next; 
-        free(cur);
-        cur = next;
-    }
-}
-
 // ----------------- Handle file stats -----------------
 // Updates the file counts and sizes for the current directory frame and the final report.
 void HandleFiles(DirFrame *frame, struct stat *st, struct stat *lst, ActivityReport *report){
@@ -134,9 +313,8 @@ int main(int argc, char *argv[]) {
     DirFrame *stack[MAX_DEPTH+2];         
     int sp = 0;                           // Stack pointer (index of the next free slot)
 
-//    VisitedNode *visited_root = NULL;     // Head of visited directories list (for loop detection)
-	create_node_hash();
-	
+    VisitedNode *visited_root = NULL;     // Head of visited directories list (for loop detection)
+
     // Create and initialize the root frame
     DirFrame *root = Create_Frame(argv[first_file_index], 0, NULL, false);
 
@@ -144,7 +322,7 @@ int main(int argc, char *argv[]) {
     struct stat st_root;
     if (stat(root->path, &st_root) == 0)
         // Record the root directory's unique ID (dev/ino) to prevent re-entry via symlink
-        add_visited(st_root.st_dev, st_root.st_ino); 
+        add_visited(&visited_root, st_root.st_dev, st_root.st_ino); 
 
     stack[sp++] = root;  // Push root onto the explicit stack
 
@@ -235,7 +413,7 @@ while (sp > 0) {
 			final_report.TOTAL_linked_directories++;
 			final_report.TOTAL_directories++; // it's still a directory, even though it's sym linked
 			// Check if the symlink target (dev/ino) has already been visited
-			bool already_visited = stat_ok && visited_before(st_target.st_dev, st_target.st_ino);
+			bool already_visited = stat_ok && visited_before(visited_root, st_target.st_dev, st_target.st_ino);
 		
 			// Determine if the symlink printout should use the '└' (last) branch symbol
 			bool show_as_last = is_last_child && !(opts.follow_links && stat_ok && !already_visited);
@@ -248,7 +426,7 @@ while (sp > 0) {
 			// Follow link if allowed by options and not already visited
 			if (!already_visited && opts.follow_links && stat_ok) {
 				// Mark the target as visited *before* pushing, to protect from internal loops
-				add_visited(st_target.st_dev, st_target.st_ino);
+				add_visited(&visited_root, st_target.st_dev, st_target.st_ino);
 				if (sp < opts.max_depth) {
 					// Create new frame for the target directory and push onto stack
 					DirFrame *child = Create_Frame(cur->path, frame->depth + 1, frame, is_last_child);
@@ -265,7 +443,7 @@ while (sp > 0) {
 
             final_report.TOTAL_directories++;
 			// Mark normal directories as visited (by their target dev/ino)
-            add_visited(st_target.st_dev, st_target.st_ino);
+            add_visited(&visited_root, st_target.st_dev, st_target.st_ino);
 
 			// Create new frame and push onto the stack
             DirFrame *child = Create_Frame(cur->path, frame->depth + 1, frame, is_last_child);
@@ -282,8 +460,7 @@ while (sp > 0) {
     }
 }
 
-    //free_visited(visited_root); // Clean up memory for the loop-detection list
-    free_node_hash(); // Clean up memory for the loop-detection hash
+    free_visited(visited_root); // Clean up memory for the loop-detection list
 
     // Print summary report
     char hsize[32];

@@ -1,0 +1,17 @@
+#ifndef OPTION_PARSING_H
+#define OPTION_PARSING_H
+
+#include <stdbool.h>
+
+// Structure to hold all parsed command-line options
+typedef struct {
+    bool show_help;			// -h
+    bool show_file_stats;	// -s
+    bool follow_links;		// -l
+    int max_depth;   		// -dN
+} Options;
+
+void parse_options(int argc, char *argv[], Options *opts, int *first_file_index);
+void show_help(void);
+
+#endif  
