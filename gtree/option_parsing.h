@@ -8,6 +8,7 @@ typedef struct {
     bool show_help;			// -h
     bool show_file_stats;	// -s
     bool follow_links;		// -l
+    bool show_files;		// -f
     int max_depth;   		// -dN
 } Options;
 

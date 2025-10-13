@@ -12,54 +12,10 @@
 #include "option_parsing.h"
 #include "memsafe.h"
 
-// -----------------------------------------------------
-// ------------------ Definitions ------------------
-// -----------------------------------------------------
-// Defines the maximum depth and also the size of the explicit stack array
-#define MAX_DEPTH 1024   
-
-// Node structure to hold subdirectory info in a linked list.
-// Used to store subdirectories discovered in a directory *before* traversing them.
-// This decouples the scanning phase from the descending phase.
-typedef struct SubDirNode {
-    char path[PATH_MAX];       // Full path of the subdirectory (e.g., "/home/user/dir/subdir")
-    bool is_symlink;           // True if this directory entry itself is a symbolic link
-    char sym_path[PATH_MAX];   // Target path if symlink (e.g., "../../otherdir")
-    struct SubDirNode *next;   // Pointer to next subdirectory (linked list for children)
-} SubDirNode;
-
-// Frame structure representing one directory level in the explicit stack.
-// This structure replaces the 'stack frame' of a recursive function call.
-typedef struct DirFrame {
-	// these are the basic frame components to manage the traversal
-    char path[PATH_MAX];         // Path of this directory
-    DIR *dir;                    // DIR* stream for reading entries with readdir
-    SubDirNode *subdirs;         // Head of the linked list of subdirectories found (Phase 1 result)
-    SubDirNode *current;         // Pointer to the current subdir being processed (iterator for Phase 2)
-    int depth;                   // Depth in the directory tree (0 = starting directory)
-	// additional file stats for this directory only 
-    size_t dir_file_count;       // Number of regular files in this specific directory
-    off_t dir_file_size;         // Cumulative size of regular files in this specific directory
-	// these are purely for print formatting
-    bool ancestor_siblings[MAX_DEPTH+2]; // Used to track tree branches for formatted output (│/└/├)
-    bool is_last;                // True if this directory is the last among its siblings (for print formatting)
-} DirFrame;
-
-// -------------------------------- Final Report -------------------------------
-// Holds summary stats accumulated during the entire traversal.
-typedef struct ActivityReport {
-	size_t TOTAL_file_count;           // Total number of regular files
-	size_t TOTAL_linked_files;         // Number of regular files that are symbolic links
-	off_t TOTAL_file_size;             // Total size of all regular files
-	size_t TOTAL_directories;          // Total directories successfully traversed
-	size_t TOTAL_linked_directories;   // Symlinked directories encountered
-} ActivityReport;
-
 
 // ----------------- Human readable file size -------------------
 // Converts a size in bytes (off_t) to a human-readable string (e.g., 4.5K, 2.1M).
-static void human_size(off_t bytes, char *out, size_t outsz)
-{
+void human_size(off_t bytes, char *out, size_t outsz){
     const char *units[] = {"B", "K", "M", "G", "T"};
     double size = (double)bytes;
     int u = 0;
@@ -72,42 +28,78 @@ static void human_size(off_t bytes, char *out, size_t outsz)
     snprintf(out, outsz, "%.1f%s", size, units[u]);
 }
 
-// ----------------- Printing a directory line -------------------
-// Core function for printing a line, handling tree symbols and stats.
-void print_directory_line(const char* basePath, int depth, bool is_last,
-                          bool ancestor_siblings[], bool is_symdir, const char* symPath, 
-                          size_t fc, off_t fs, bool is_recursive, bool show_stats)
+// ----------------- Printing helpers -------------------
+static void print_tree_prefix(const DirFrame *frame)
 {
-    const char* name;
-    // Extract just the basename of the directory for clean printing
-    const char *slash = strrchr(basePath, '/');
-    name = (slash && depth > 0) ? slash + 1 : basePath;  
+    if (!frame) return;
+    for (int i = 1; i < frame->depth; i++)
+        printf("%s", frame->ancestor_siblings[i] ? "│   " : "    ");
+}
 
-    // Print tree structure prefix (e.g., │    )
-    for (int i = 1; i < depth; i++)
-        // Print vertical bar '│' if the ancestor has more siblings, else print spaces
-        printf("%s", ancestor_siblings[i] ? "│   " : "    ");
-
-    // Print connector for the current level (└ or ├)
-    if (depth > 0)
-        printf("%s── ", is_last ? "└" : "├");
-
-    // Case: Directory is a symbolic link
+static void print_directory_content(const char *name, bool is_symdir,
+                                    const char *symPath, bool is_recursive,
+                                    bool show_stats, size_t fc, off_t fs)
+{
     if (is_symdir) {
-        printf("@%s -> %s%s\n", name, symPath, is_recursive ? " [recursive - not followed]" : "");
+        printf("@%s -> %s%s\n", name, symPath,
+               is_recursive ? " [recursive - not followed]" : "");
         return;
     }
 
-    // Case: Normal directory (print file stats if any)
-    if(show_stats && fc>0){
-		char hsize[32];
-		human_size(fs, hsize, sizeof(hsize));
-    	printf("%s [Files: %zu] [Size: %s]%s\n", name, fc, hsize, is_recursive ? " [recursive - not followed]" : "");
-    } 
-    else {
-    	printf("%s%s\n", name, is_recursive ? " [recursive - not followed]" : "");
-	}
+    if (show_stats && fc > 0) {
+        char hsize[32];
+        human_size(fs, hsize, sizeof(hsize));
+        printf("%s [Files: %zu] [Size: %s]%s\n", name, fc, hsize,
+               is_recursive ? " [recursive - not followed]" : "");
+    } else {
+        printf("%s%s\n", name,
+               is_recursive ? " [recursive - not followed]" : "");
+    }
 }
+
+// ----------------- Unified entry printing -------------------
+// entry_name: for files this is the printable string (e.g., "@link -> target" or "filename"),
+//             for directories pass NULL to print the directory's basename.
+// is_dir: true => print directory (connector + stats/symlink handling)
+//         false => print file (no connector, prints "    : filename" style as original)
+void print_entry_line(const DirFrame *frame,
+                      bool is_last,
+                      bool is_symdir,
+                      const char *symPath,
+                      bool is_recursive,
+                      bool show_stats,
+                      const char *entry_name,
+                      bool is_dir)
+{
+    const char *basePath = frame ? frame->path : "";
+    int depth = frame ? frame->depth : 0;
+    const bool *ancestor_siblings = frame ? frame->ancestor_siblings : NULL;
+    size_t fc = frame ? frame->dir_file_count : 0;
+    off_t fs = frame ? frame->dir_file_size : 0;
+
+    const char *slash = strrchr(basePath, '/');
+    const char *dir_name = (slash && depth > 0) ? slash + 1 : basePath;
+
+    // Print tree prefix (│   / spaces)
+    if (ancestor_siblings)
+        print_tree_prefix(frame);
+
+    // --- FILE case: keep the original "    : name" behaviour (no connector) ---
+    if (!is_dir) {
+        // preserve original formatting: depth==0 ? "" : "    "
+        printf("%s : %s\n", depth == 0 ? "" : "    ", entry_name ? entry_name : "");
+        return;
+    }
+
+    // --- DIRECTORY case: print connector + directory content (or symlink) ---
+    if (depth > 0)
+        printf("%s── ", is_last ? "└" : "├");
+
+    // Use dir_name as the printed name for directories
+    print_directory_content(dir_name, is_symdir, symPath, is_recursive, show_stats, fc, fs);
+}
+
+
 
 // ----------------- Create a new directory frame -----------------
 // Allocates and initializes a new DirFrame, simulating a push onto the call stack.
@@ -130,6 +122,7 @@ DirFrame *Create_Frame(const char *dirPath, int dirDepth, const DirFrame *parent
     // Initialize for Phase 1 (scanning)
     framePtr->subdirs = NULL;
     framePtr->current = NULL;
+    framePtr->subfiles = NULL;
     framePtr->dir_file_count = 0;
     framePtr->dir_file_size = 0;
     return framePtr;
@@ -163,7 +156,7 @@ void add_subdir(bool is_symdir, char *sub_path, SubDirNode **head_ptr, SubDirNod
     }
 }
 
-// Free a linked list of subdirectories (SubDirNode).
+// ----------------- Free a linked list of subdirectories (SubDirNode) -----------------
 void free_subdirs(SubDirNode *head) {
     SubDirNode *cur = head, *next;
     while (cur) { 
@@ -173,18 +166,71 @@ void free_subdirs(SubDirNode *head) {
     }
 }
 
+
+void add_subfile(bool is_symlink, char *fname, SubDirFile **tail_ptr){
+	// allocate a new node & populate it
+	SubDirFile *n = xmalloc(sizeof(SubDirFile));
+	snprintf(n->name, PATH_MAX, "%s", fname);
+	n->is_symlink = is_symlink;
+	
+	// If it is a symlink, read its target path
+	if (is_symlink) {
+		ssize_t len = readlink(fname, n->sym_path, PATH_MAX - 1);
+		if (len != -1) n->sym_path[len] = '\0'; // readlink does not auto null terminate
+		else n->sym_path[0] = '\0'; // Handle readlink failure
+	} else n->sym_path[0] = '\0';
+	
+	n->prev = *tail_ptr;
+	
+	// Append to the tail of the linked list
+	// Use *head_ptr and *tail_ptr to access/modify the actual pointers in main()
+	*tail_ptr = n;
+}
+
+// Free a linked list of subdirectories (SubDirNode).
+void free_subfiles(SubDirFile *tail) {
+    SubDirFile *cur = tail, *prev;
+    while (cur != NULL) { // Stop when the true 'head' (prev is NULL) is reached
+        prev = cur->prev; 
+        free(cur);
+        cur = prev;
+    }
+}
+
 // ----------------- Handle file stats -----------------
 // Updates the file counts and sizes for the current directory frame and the final report.
-void HandleFiles(DirFrame *frame, struct stat *st, struct stat *lst, ActivityReport *report){
+void HandleFiles(char *fname, DirFrame *frame, struct stat *st, struct stat *lst, ActivityReport *report, bool show_files){
 	if (S_ISREG(st->st_mode)) {  // Use stat() result to check if it's a regular file
+		// update all of the local and global counts
 		frame->dir_file_count++;
 		frame->dir_file_size += st->st_size;
-		report->TOTAL_file_count ++;
-		
-		// Use lstat() result to check if the file entry itself is a symbolic link
-		if (S_ISLNK(lst->st_mode)) report->TOTAL_linked_files++;
-		
+		report->TOTAL_file_count ++;	
 		report->TOTAL_file_size += st->st_size;
+		// Use lstat() result to check if the file entry itself is a symbolic link
+		bool is_link = S_ISLNK(lst->st_mode);
+		if (is_link) report->TOTAL_linked_files++;
+		
+		// if we are showing files, we need to push details onto the file stack
+		if(show_files){
+			char fdet[PATH_MAX] = "";
+			char target[PATH_MAX] = "";
+			
+			if (is_link) {
+				ssize_t len = readlink(fname, target, PATH_MAX - 1);
+				if (len != -1) target[len] = '\0'; // readlink does not auto null terminate
+				else target[0] = '\0'; // Handle readlink failure
+			} else target[0] = '\0';
+
+			snprintf(fdet, PATH_MAX, "%s%s%s%s%s", 
+					is_link ? "@" : "", 
+					strrchr(fname, '/') + 1,
+					target[0] != '\0' ? " (" : "", 
+					target[0] != '\0' ? target : "", 
+					target[0] != '\0' ? ")" : "");
+			add_subfile(is_link, fdet, &(frame->subfiles));
+			// get file details
+			// push onto file linked list
+		}
 	}
 }
 
@@ -251,7 +297,7 @@ int main(int argc, char *argv[]) {
 				// stat follows the link to get info about the target (if it exists)
 				if (stat(buf, &st) == -1) st.st_mode = 0;
 	
-				HandleFiles(frame, &st, &lst, &final_report);
+				HandleFiles(buf, frame, &st, &lst, &final_report, opts.show_files);
 	
 				// Determine if the entry is a symlink *that points to* a directory
 				bool is_symdir = false;
@@ -269,9 +315,21 @@ int main(int argc, char *argv[]) {
 			frame->current = head;
 	
 			// Print the current directory line (must happen *after* file scanning)
-			print_directory_line(frame->path, frame->depth, frame->is_last,
-								 frame->ancestor_siblings, false, NULL,
-								 frame->dir_file_count, frame->dir_file_size, false, opts.show_file_stats);
+			print_entry_line(frame, frame->is_last,
+                 false, NULL,
+                 false, opts.show_file_stats, NULL, true);
+                 
+			if(opts.show_files){
+				SubDirFile *cur = frame->subfiles, *prev;
+				while (cur != NULL) { // Stop when the true 'head' (prev is NULL) is reached
+					prev = cur->prev; 
+					print_entry_line(frame, frame->is_last,
+               			  cur->is_symlink, NULL,
+                		  false, opts.show_file_stats, cur->name, false);
+					cur = prev;
+				}
+				free_subfiles(frame->subfiles);
+			}								 
 		}
 	
 		// ----------------- Phase 2: Process the next subdirectory -----------------
@@ -300,9 +358,14 @@ int main(int argc, char *argv[]) {
 				bool show_as_last = is_last_child && !(opts.follow_links && stat_ok && !already_visited);
 			
 				// Print the symlink line
-				print_directory_line(cur->path, frame->depth + 1, show_as_last,
-									 frame->ancestor_siblings, true, cur->sym_path,
-									 0, 0, already_visited, opts.show_file_stats);
+				DirFrame temp = {0};
+				snprintf(temp.path, PATH_MAX, "%s", cur->path);
+				temp.depth = frame->depth + 1;
+				memcpy(temp.ancestor_siblings, frame->ancestor_siblings, sizeof(temp.ancestor_siblings));
+				
+				print_entry_line(&temp, show_as_last,
+							 true, cur->sym_path,
+							 already_visited, opts.show_file_stats, NULL, true);
 			
 				// Follow link if allowed by options and not already visited
 				if (!already_visited && opts.follow_links && stat_ok) {
@@ -355,6 +418,5 @@ int main(int argc, char *argv[]) {
 				"Total File Size: %s\n",
 				final_report.TOTAL_file_count, final_report.TOTAL_linked_files, hsize);
 	 
-
     return 0;
 }
