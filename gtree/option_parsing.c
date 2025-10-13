@@ -33,9 +33,9 @@ HelpDef help_table[] = {
 const char option_list[] = "hsld:";
 
 // Parses command line arguments using POSIX getopt() and sets the Options struct.
-void parse_options(int argc, char *argv[], Options *opts, int *first_file_index) {
-    *opts = (Options){0};           // Initialize all fields to 0 / false
-    opts->max_depth = MAX_DEPTH;     // Default max depth
+void parse_options(int argc, char *argv[], Options *opts, int default_depth, int *first_file_index) {
+    *opts = (Options){0};           	 // Initialize all fields to 0 / false
+    opts->max_depth = default_depth;     // Default max depth
     int opt;
     // Loop through options using getopt. getopt returns -1 when no more options are found.
     while ((opt = getopt(argc, argv, option_list)) != -1) { 
@@ -46,7 +46,7 @@ void parse_options(int argc, char *argv[], Options *opts, int *first_file_index)
             case 'd': {
                 int n = atoi(optarg);        // optarg holds the argument for the current option (-d N)
                 if (n < 2) n = 2;            // Enforce minimum depth
-                if (n > MAX_DEPTH) n = MAX_DEPTH; // Prevent array overflow/extreme depth
+                if (n > default_depth) n = default_depth; // Prevent array overflow/extreme depth
                 opts->max_depth = n;
                 break;
 			}

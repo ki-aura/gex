@@ -52,7 +52,7 @@ typedef visited_set vnode_set_t; // Use the generated type name
 vnode_set_t *nhash = NULL;
 
 // ------------------- Visited hash functions ------------------
-void create_node_hash() {
+void create_visited_node_hash() {
 	nhash = visited_set_init();
 }
 
@@ -74,7 +74,7 @@ bool visited_before(dev_t dev, ino_t ino) {
 }
 
 // Frees all memory used by the visited directories linked list.
-void free_node_hash() {
+void free_visited_node_hash() {
     visited_set_destroy(nhash);
 }
 

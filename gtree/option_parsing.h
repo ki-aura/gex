@@ -11,7 +11,7 @@ typedef struct {
     int max_depth;   		// -dN
 } Options;
 
-void parse_options(int argc, char *argv[], Options *opts, int *first_file_index);
+void parse_options(int argc, char *argv[], Options *opts, int default_depth, int *first_file_index);
 void show_help(void);
 
 #endif  
