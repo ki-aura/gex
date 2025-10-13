@@ -61,6 +61,7 @@ typedef struct ActivityReport {
 	off_t TOTAL_file_size;             // Total size of all regular files
 	size_t TOTAL_directories;          // Total directories successfully traversed
 	size_t TOTAL_linked_directories;   // Symlinked directories encountered
+	int TOTAL_depth;				   // max number of levels we descended
 } ActivityReport;
 
 void human_size(off_t bytes, char *out, size_t outsz);

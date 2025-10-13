@@ -9,7 +9,7 @@ endif
 # Common flags
 CFLAGS_COMMON = 
 TARGET        = gtree
-SRC           = gtree.c visit_hash.c option_parsing.c memsafe.c
+SRC           = gtree.c visit_hash.c option_parsing.c memsafe.c print.c
 OBJ           = $(SRC:.c=.o)
 
 .PHONY: all clean release tidy
