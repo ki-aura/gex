@@ -64,6 +64,5 @@ typedef struct ActivityReport {
 	int TOTAL_depth;				   // max number of levels we descended
 } ActivityReport;
 
-void human_size(off_t bytes, char *out, size_t outsz);
 
 #endif

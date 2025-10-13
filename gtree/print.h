@@ -14,7 +14,6 @@ void print_entry_line(const DirFrame *frame,
 void free_subfiles(SubDirFile *tail);
 void HandleFiles(char *fname, DirFrame *frame, struct stat *st, struct stat *lst, 
 			ActivityReport *report, bool show_files);
-
-
+void human_size(off_t bytes, char *out, size_t outsz);
 
 #endif

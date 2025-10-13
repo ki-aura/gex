@@ -85,8 +85,6 @@ void free_subdirs(SubDirNode *head) {
     }
 }
 
-
-
 // ------------------------- Main -------------------------
 int main(int argc, char *argv[]) {
     Options opts;

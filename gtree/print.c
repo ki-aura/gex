@@ -24,7 +24,10 @@ void human_size(off_t bytes, char *out, size_t outsz){
         u++;
     }
     // Format the output string with 1 decimal place and the unit
-    snprintf(out, outsz, "%.1f%s", size, units[u]);
+    if(units[u][0]=='B')
+		snprintf(out, outsz, "%.0fB", size);
+    else
+		snprintf(out, outsz, "%.1f%s", size, units[u]);
 }
 
 // ----------------- Printing helpers -------------------
@@ -94,22 +97,11 @@ void print_entry_line(const DirFrame *frame, bool is_last, bool is_symdir,
 }
 
 static void add_subfile(bool is_symlink, char *fname, SubDirFile **tail_ptr){
-	// allocate a new node & populate it
 	SubDirFile *n = xmalloc(sizeof(SubDirFile));
 	snprintf(n->name, PATH_MAX, "%s", fname);
 	n->is_symlink = is_symlink;
-	
-	// If it is a symlink, read its target path
-	if (is_symlink) {
-		ssize_t len = readlink(fname, n->sym_path, PATH_MAX - 1);
-		if (len != -1) n->sym_path[len] = '\0'; // readlink does not auto null terminate
-		else n->sym_path[0] = '\0'; // Handle readlink failure
-	} else n->sym_path[0] = '\0';
-	
+	n->sym_path[0] = '\0';
 	n->prev = *tail_ptr;
-	
-	// Append to the tail of the linked list
-	// Use *head_ptr and *tail_ptr to access/modify the actual pointers in main()
 	*tail_ptr = n;
 }
 
@@ -123,41 +115,79 @@ void free_subfiles(SubDirFile *tail) {
     }
 }
 
-// ----------------- Handle file stats -----------------
-// Updates the file counts and sizes for the current directory frame and the final report.
+// ----------------- Modified HandleFiles -----------------
+// Handle files, symlinks, and dangling links properly
 void HandleFiles(char *fname, DirFrame *frame, struct stat *st, struct stat *lst, 
-				ActivityReport *report, bool show_files){
-	if (S_ISREG(st->st_mode)) {  // Use stat() result to check if it's a regular file
-		// update all of the local and global counts
-		frame->dir_file_count++;
-		frame->dir_file_size += st->st_size;
-		report->TOTAL_file_count ++;	
-		report->TOTAL_file_size += st->st_size;
-		// Use lstat() result to check if the file entry itself is a symbolic link
-		bool is_link = S_ISLNK(lst->st_mode);
-		if (is_link) report->TOTAL_linked_files++;
-		
-		// if we are showing files, we need to push details onto the file stack
-		if(show_files){
-			char fdet[PATH_MAX] = "";
-			char target[PATH_MAX] = "";
-			
-			if (is_link) {
-				ssize_t len = readlink(fname, target, PATH_MAX - 1);
-				if (len != -1) target[len] = '\0'; // readlink does not auto null terminate
-				else target[0] = '\0'; // Handle readlink failure
-			} else target[0] = '\0';
+                 ActivityReport *report, bool show_files) {
 
-			snprintf(fdet, PATH_MAX, "%s%s%s%s%s", 
-					is_link ? "@" : "", 
-					strrchr(fname, '/') + 1,
-					target[0] != '\0' ? " (" : "", 
-					target[0] != '\0' ? target : "", 
-					target[0] != '\0' ? ")" : "");
-			add_subfile(is_link, fdet, &(frame->subfiles));
-			// get file details
-			// push onto file linked list
-		}
-	}
+    bool target_is_file = false;
+    bool target_is_dir = false;
+    bool dangling = false;
+    bool is_link;
+
+    // Determine target type if symlink
+    is_link = S_ISLNK(lst->st_mode);
+    if (is_link) {
+        if (st->st_mode == 0) {
+            dangling = true; // stat failed
+        } else if (S_ISDIR(st->st_mode)) {
+            target_is_dir = true;
+        } else if (S_ISREG(st->st_mode)) {
+            target_is_file = true;
+        }
+    }
+
+    // Case 1: regular file or symlink to file
+    if ((!is_link && S_ISREG(st->st_mode)) || target_is_file) {
+        frame->dir_file_count++;
+        frame->dir_file_size += st->st_size;
+        report->TOTAL_file_count++;
+        report->TOTAL_file_size += st->st_size;
+        if (is_link) report->TOTAL_linked_files++;
+
+        if (show_files) {
+            char fdet[PATH_MAX] = "";
+            if (is_link) {
+                char target[PATH_MAX] = "";
+                ssize_t len = readlink(fname, target, PATH_MAX - 1);
+                if (len != -1) target[len] = '\0';
+                else target[0] = '\0';
+                snprintf(fdet, PATH_MAX, "@%s (-> %s)", strrchr(fname, '/') + 1, target);
+            } else {
+                char hsize[32];
+                human_size(st->st_size, hsize, sizeof(hsize));
+                snprintf(fdet, PATH_MAX, "%s (%s)", strrchr(fname, '/') + 1, hsize);
+            }
+            add_subfile(is_link, fdet, &(frame->subfiles));
+        }
+        return;
+    }
+
+    // Case 2: dangling symlink (file or directory)
+    if (is_link && dangling) {
+        frame->dir_file_count++;
+        report->TOTAL_file_count++;
+        report->TOTAL_linked_files++;
+        if (show_files) {
+            char target[PATH_MAX] = "";
+            ssize_t len = readlink(fname, target, PATH_MAX - 1);
+            if (len != -1) target[len] = '\0';
+            else target[0] = '\0';
+            char fdet[PATH_MAX];
+            snprintf(fdet, PATH_MAX, "@%s -> %s [dangling]", strrchr(fname, '/') + 1, target);
+            add_subfile(true, fdet, &(frame->subfiles));
+        }
+        return;
+    }
+
+    // Case 3: symlink to directory (or directory itself)
+    if (target_is_dir || (!is_link && S_ISDIR(st->st_mode))) {
+        // Don't count as a file; traversal will handle directories
+        return;
+    }
+
+    // Otherwise: ignore (non-regular, non-symlink files)
 }
+
+
 
