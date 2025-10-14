@@ -73,7 +73,7 @@ bool open_file(int argc, char *argv[])
 		if (strcmp(argv[1],"--version")==0 || strcmp(argv[1],"-v")==0 ) {
 			putp(tigetstr("rmcup"));
 			endwin();
-            snprintf(tmp, 40, "Version %s\n", GEX_VERSION);
+            snprintf(tmp, 40, "Gex Version: ki-aura %s\n", GEX_VERSION);
 			fputs(tmp, stderr);
 			final_close(0);
 			return false;
