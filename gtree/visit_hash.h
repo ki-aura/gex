@@ -7,7 +7,7 @@
 
 void create_visited_node_hash();
 void free_visited_node_hash();
-void add_visited(dev_t dev, ino_t ino);
+int add_visited(dev_t dev, ino_t ino);
 bool visited_before(dev_t dev, ino_t ino);
 
 #endif  

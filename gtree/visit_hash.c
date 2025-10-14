@@ -56,13 +56,14 @@ void create_visited_node_hash() {
 	nhash = visited_set_init();
 }
 
-void add_visited(dev_t dev, ino_t ino) {
+int add_visited(dev_t dev, ino_t ino) {
 	VisitedHash key = { .st_dev = dev, .st_ino = ino };
 	int absent;
 	// The put function is prefix_put, which is visited_set_put
 	visited_set_put(nhash, key, &absent);
 	// absent == 0: Key already existed (visited before).
 	// absent == 1: Key is new and inserted.
+	return absent;
 }
 
 

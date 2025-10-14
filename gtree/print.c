@@ -24,10 +24,7 @@ void human_size(off_t bytes, char *out, size_t outsz){
         u++;
     }
     // Format the output string with 1 decimal place and the unit
-    if(units[u][0]=='B')
-		snprintf(out, outsz, "%.0fB", size);
-    else
-		snprintf(out, outsz, "%.1f%s", size, units[u]);
+    snprintf(out, outsz, (u == 0) ? "%.0f%s" : "%.1f%s", size, units[u]);
 }
 
 // ----------------- Printing helpers -------------------
@@ -84,7 +81,12 @@ void print_entry_line(const DirFrame *frame, bool is_last, bool is_symdir,
     // --- FILE case: keep the original "    : name" behaviour (no connector) ---
     if (!is_dir) {
         // preserve original formatting: depth==0 ? "" : "    "
-        printf("%s : %s\n", depth == 0 ? "" : "    ", entry_name ? entry_name : "");
+        const char *TCOL  = "\033[36m";  // ANSI 33m cyan; 34 blue, 31 red, 32 green, 36 cyan
+	    const char *RESET = "\033[0m";   // reset to default color
+
+        printf("%s: " "%s%s%s\n",
+        		depth == 0 ? "" : (is_last ? "    " : "│   "), 
+        		TCOL, entry_name ? entry_name : "", RESET);
         return;
     }
 
@@ -96,6 +98,9 @@ void print_entry_line(const DirFrame *frame, bool is_last, bool is_symdir,
     print_directory_content(dir_name, is_symdir, symPath, is_recursive, show_stats, fc, fs);
 }
 
+// ----------------- File Handling -------------------
+// // Helper functions for maintaining a print_queue forfiles
+
 static void add_subfile(bool is_symlink, char *fname, SubDirFile **tail_ptr){
 	SubDirFile *n = xmalloc(sizeof(SubDirFile));
 	snprintf(n->name, PATH_MAX, "%s", fname);
@@ -105,7 +110,7 @@ static void add_subfile(bool is_symlink, char *fname, SubDirFile **tail_ptr){
 	*tail_ptr = n;
 }
 
-// Free a linked list of subdirectories (SubDirNode).
+// Free a linked list of subdirectories (SubDirFiles).
 void free_subfiles(SubDirFile *tail) {
     SubDirFile *cur = tail, *prev;
     while (cur != NULL) { // Stop when the true 'head' (prev is NULL) is reached
@@ -115,7 +120,7 @@ void free_subfiles(SubDirFile *tail) {
     }
 }
 
-// ----------------- Modified HandleFiles -----------------
+// ----------------- Handle Files -----------------
 // Handle files, symlinks, and dangling links properly
 void HandleFiles(char *fname, DirFrame *frame, struct stat *st, struct stat *lst, 
                  ActivityReport *report, bool show_files) {
