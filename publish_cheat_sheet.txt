@@ -3,21 +3,21 @@ From Project Folder
 git tag --list
 grep  "GEX_VERSION" gex.h
 git add .
-git commit -m "ready for v2.1.0"
+git commit -m "ready for v2.2.0"
 git push
-git tag -a v2.1.0 -m "Release v2.1.0"
-git push origin v2.1.0
-gh release create v2.1.0 --title "Release v2.1.0" --notes "Release v2.1.0 notes..."
+git tag -a v2.2.0 -m "Release v2.2.0"
+git push origin v2.2.0
+gh release create v2.2.0 --title "Release v2.2.0" --notes "Release v2.2.0 notes..."
 
 From Homebrew Folder
 ====================
 cd /opt/homebrew/Library/Taps/ki-aura/homebrew-gex
-curl -L -o v2.1.0.tar.gz https://github.com/ki-aura/gex/archive/refs/tags/v2.1.0.tar.gz
-shasum -a 256 v2.1.0.tar.gz
+curl -L -o v2.2.0.tar.gz https://github.com/ki-aura/gex/archive/refs/tags/v2.2.0.tar.gz
+shasum -a 256 v2.2.0.tar.gz
 rm *.gz
 nano Formula/gex.rb
 git add Formula/gex.rb
-git commit -m "ready for v2.1.0"
+git commit -m "ready for v2.2.0"
 git push
 
 Test
