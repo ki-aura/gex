@@ -25,13 +25,14 @@ HelpDef help_table[] = {
     {"-h",   "Display this help message"},
 	{"-s",   "Show File & Size totals for populated directories"},
 	{"-l",   "Follow Sym-Link directories (disables loop-detection if not specified)"},
-	{"-f",   "Show Individual Files"},
+	{"-f",   "Show Individual Files"},	
+	{"-c",   "Show Files in colour (automatically sets -f)"},	
     {"-d N", "Maximum depth (will always run to a minimum of 2)"},
     {NULL, NULL} // sentinel: marks the end of the array
 };
 
 // List of supported options for getopt(). 'd:' means -d requires an argument.
-const char option_list[] = "hslfd:";
+const char option_list[] = "hslfcd:";
 
 // Parses command line arguments using POSIX getopt() and sets the Options struct.
 void parse_options(int argc, char *argv[], Options *opts, int default_depth, int *first_file_index) {
@@ -45,6 +46,7 @@ void parse_options(int argc, char *argv[], Options *opts, int default_depth, int
             case 's': opts->show_file_stats = true; break;
             case 'l': opts->follow_links = true; break;
             case 'f': opts->show_files = true; break;
+            case 'c': opts->colour_files = true; opts->show_files = true; break;
             case 'd': {
                 int n = atoi(optarg);        // optarg holds the argument for the current option (-d N)
                 if (n < 2) n = 2;            // Enforce minimum depth

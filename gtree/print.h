@@ -10,7 +10,8 @@ void print_entry_line(const DirFrame *frame,
                       bool is_recursive,
                       bool show_stats,
                       const char *entry_name,
-                      bool is_dir);
+                      bool is_dir,
+                      bool colour_files);
 void free_subfiles(SubDirFile *tail);
 void HandleFiles(char *fname, DirFrame *frame, struct stat *st, struct stat *lst, 
 			ActivityReport *report, bool show_files);

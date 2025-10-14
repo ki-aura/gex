@@ -63,7 +63,7 @@ static void print_directory_content(const char *name, bool is_symdir,
 //         false => print file (no connector, prints "    : filename" style as original)
 void print_entry_line(const DirFrame *frame, bool is_last, bool is_symdir, 
 					  const char *symPath, bool is_recursive, bool show_stats, 
-					  const char *entry_name, bool is_dir) {
+					  const char *entry_name, bool is_dir, bool colour_files) {
 					   
     const char *basePath = frame ? frame->path : "";
     int depth = frame ? frame->depth : 0;
@@ -86,7 +86,9 @@ void print_entry_line(const DirFrame *frame, bool is_last, bool is_symdir,
 
         printf("%s: " "%s%s%s\n",
         		depth == 0 ? "" : (is_last ? "    " : "│   "), 
-        		TCOL, entry_name ? entry_name : "", RESET);
+        		colour_files ? TCOL : "", 
+        		entry_name ? entry_name : "", 
+        		colour_files ? RESET : "");
         return;
     }
 

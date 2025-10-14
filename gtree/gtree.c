@@ -309,7 +309,7 @@ int main(int argc, char *argv[]) {
             // Print current directory line
             print_entry_line(frame, frame->is_last,
                              false, NULL,
-                             false, opts.show_file_stats, NULL, true);
+                             false, opts.show_file_stats, NULL, true, opts.colour_files);
 
             // Print files if requested
             if (opts.show_files) {
@@ -318,7 +318,7 @@ int main(int argc, char *argv[]) {
                     prev = cur->prev;
                     print_entry_line(frame, frame->is_last,
                                      cur->is_symlink, NULL,
-                                     false, opts.show_file_stats, cur->name, false);
+                                     false, opts.show_file_stats, cur->name, false, opts.colour_files);
                     cur = prev;
                 }
                 free_subfiles(frame->subfiles);
@@ -349,7 +349,7 @@ int main(int argc, char *argv[]) {
                 memcpy(temp.ancestor_siblings, frame->ancestor_siblings, sizeof(temp.ancestor_siblings));
 
                 print_entry_line(&temp, is_last_child, true, cur->sym_path,
-                                 already_visited, opts.show_file_stats, NULL, true);
+                                 already_visited, opts.show_file_stats, NULL, true, opts.colour_files);
 
                 // Traverse if not already visited and option allows
                 if (!already_visited && opts.follow_links && stat_ok) {
@@ -388,7 +388,7 @@ int main(int argc, char *argv[]) {
 					memcpy(temp.ancestor_siblings, frame->ancestor_siblings, sizeof(temp.ancestor_siblings));
 	
 					print_entry_line(&temp, is_last_child, false, cur->path,
-									 true, opts.show_file_stats, NULL, true);
+									 true, opts.show_file_stats, NULL, true, opts.colour_files);
                 }
             }
 
