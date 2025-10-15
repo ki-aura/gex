@@ -4,6 +4,8 @@
 #include "rbtree.h"
 #include "rbtree_ext.h"
 
+// compile using cc -o rbtree rbtree_main.c rbtree_ext.c rbtree.c
+
 int main(void) {
     /* Initialize the global trees at runtime */
 

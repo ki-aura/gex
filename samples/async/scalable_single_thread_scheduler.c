@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+// compile using cc -o scalable_single_thread_scheduler scalable_single_thread_scheduler.c
+
 typedef void (*task_func)(struct timespec *scheduled, struct timespec *actual, void *ctx);
 
 typedef struct {
@@ -90,17 +92,6 @@ static void sleep_until(const struct timespec *target) {
 
 
 // Example task functions
-void task_snape(struct timespec *scheduled, struct timespec *actual, void *ctx) {
- 	static int counter = 0;
- 	if (counter++ < 2) printf("Snape\n"); 
- 	if (counter == 4) counter = 0;
-}
-
-void task_wiz(struct timespec *scheduled, struct timespec *actual, void *ctx) {
-    double diff = timespec_diff(scheduled, actual);
-    printf("%s\n", (char *)ctx);
-}
-
 void task_timer(struct timespec *scheduled, struct timespec *actual, void *ctx) {
     double diff = timespec_diff(scheduled, actual);
     printf("Timer running: message=%s, Scheduled=%ld.%09ld, Actual=%ld.%09ld, Diff=%+.6f s\n",
@@ -108,6 +99,104 @@ void task_timer(struct timespec *scheduled, struct timespec *actual, void *ctx) 
            scheduled->tv_sec, scheduled->tv_nsec,
            actual->tv_sec, actual->tv_nsec,
            diff);
+}
+
+void task_snape(struct timespec *scheduled, struct timespec *actual, void *ctx) {
+ 	static int counter = 0;
+    static struct timespec last_run = {0, 0}; 
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now); 
+    double seconds_since_last_run;
+    if (last_run.tv_sec != 0 || last_run.tv_nsec != 0) 
+        seconds_since_last_run = timespec_diff(&last_run, &now);
+    else 
+    	seconds_since_last_run = 0;
+    
+ 	if (counter++ < 2) 
+ 		printf("        Snape(%.1f)\n", seconds_since_last_run); 
+ 	
+ 	if (counter == 4) counter = 0;
+ 	 last_run = now;
+}
+
+void task_wiz(struct timespec *scheduled, struct timespec *actual, void *ctx) {
+    static struct timespec last_run = {0, 0}; 
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now); 
+    double seconds_since_last_run;
+    if (last_run.tv_sec != 0 || last_run.tv_nsec != 0) 
+        seconds_since_last_run = timespec_diff(&last_run, &now);
+    else 
+    	seconds_since_last_run = 0;
+    
+    printf("%s (%.1f)\n",  
+               (char *)ctx, 
+               seconds_since_last_run);
+    last_run = now;
+}
+
+void task_wiz2(struct timespec *scheduled, struct timespec *actual, void *ctx) {
+    static struct timespec last_run = {0, 0}; 
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now); 
+    double seconds_since_last_run;
+    if (last_run.tv_sec != 0 || last_run.tv_nsec != 0) 
+        seconds_since_last_run = timespec_diff(&last_run, &now);
+    else 
+    	seconds_since_last_run = 0;
+    
+    printf("%s (%.1f)\n",  
+               (char *)ctx, 
+               seconds_since_last_run);
+    last_run = now;
+}
+
+void task_wiz3(struct timespec *scheduled, struct timespec *actual, void *ctx) {
+    static struct timespec last_run = {0, 0}; 
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now); 
+    double seconds_since_last_run;
+    if (last_run.tv_sec != 0 || last_run.tv_nsec != 0) 
+        seconds_since_last_run = timespec_diff(&last_run, &now);
+    else 
+    	seconds_since_last_run = 0;
+    
+    printf("%s (%.1f)\n",  
+               (char *)ctx, 
+               seconds_since_last_run);
+    last_run = now;
+}
+
+void task_wiz4(struct timespec *scheduled, struct timespec *actual, void *ctx) {
+    static struct timespec last_run = {0, 0}; 
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now); 
+    double seconds_since_last_run;
+    if (last_run.tv_sec != 0 || last_run.tv_nsec != 0) 
+        seconds_since_last_run = timespec_diff(&last_run, &now);
+    else 
+    	seconds_since_last_run = 0;
+    
+    printf("%s (%.1f)\n",  
+               (char *)ctx, 
+               seconds_since_last_run);
+    last_run = now;
+}
+
+void task_wiz5(struct timespec *scheduled, struct timespec *actual, void *ctx) {
+    static struct timespec last_run = {0, 0}; 
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now); 
+    double seconds_since_last_run;
+    if (last_run.tv_sec != 0 || last_run.tv_nsec != 0) 
+        seconds_since_last_run = timespec_diff(&last_run, &now);
+    else 
+    	seconds_since_last_run = 0;
+    
+    printf("%s (%.1f)\n",  
+               (char *)ctx, 
+               seconds_since_last_run);
+    last_run = now;
 }
 
 // Adds a new task to the heap with given callback, initial delay, interval, and context
@@ -139,11 +228,11 @@ int main() {
     // Add tasks
     add_task(&heap, task_wiz, 0, 500, "tick");
     add_task(&heap, task_snape, 0, 1000, NULL);
-    add_task(&heap, task_wiz, 2000, 4000, "Severus Snape");
-    add_task(&heap, task_wiz, 3000, 4000, "Dumbledor!");
-    add_task(&heap, task_wiz, 6000, 7000, "Ron WEEEEEEEEEASLEY");
-    add_task(&heap, task_wiz, 13000, 250, "Harry Potter...");
-    add_task(&heap, task_timer, 0, 9000, "time..");
+    add_task(&heap, task_wiz2, 2000, 4000, "        Severus Snape");
+    add_task(&heap, task_wiz3, 3200, 4000, "                        Dumbledor!");
+    add_task(&heap, task_wiz4, 6000, 7000, "                                    Ron WEEEEEEEEEASLEY");
+    add_task(&heap, task_wiz5, 13000, 250, "                                                            Harry Potter...");
+//    add_task(&heap, task_timer, 0, 9000, "time..");
 
 	while (true) {
 		Task *next = heap_pop(&heap);
