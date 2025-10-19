@@ -30,7 +30,7 @@
 /* Begin PBXFileReference section */
 		C97624372E95A414007BEC30 /* rbtree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = rbtree.h; path = /Users/matt/Projects/gex/rbtree.h; sourceTree = "<absolute>"; };
 		C97624382E95A414007BEC30 /* rbtree.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = rbtree.c; path = /Users/matt/Projects/gex/rbtree.c; sourceTree = "<absolute>"; };
-		C976243A2E95A4E2007BEC30 /* ttree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ttree.h; path = /Users/matt/Projects/gex/ttree.h; sourceTree = "<absolute>"; };
+		C98749B92EA1689B00DF0CEA /* systree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = systree.h; path = /Users/matt/Projects/gex/systree.h; sourceTree = "<absolute>"; };
 		C9D6E68C2E71678F00602D4C /* mhex */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mhex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9D6E6982E7168BF00602D4C /* file_handling.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = file_handling.h; path = /Users/matt/Projects/gex/file_handling.h; sourceTree = "<absolute>"; };
 		C9D6E6992E7168BF00602D4C /* file_handling.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = file_handling.c; path = /Users/matt/Projects/gex/file_handling.c; sourceTree = "<absolute>"; };
@@ -68,7 +68,7 @@
 				C9D6E6A12E7168BF00602D4C /* keyb_man.c */,
 				C97624372E95A414007BEC30 /* rbtree.h */,
 				C97624382E95A414007BEC30 /* rbtree.c */,
-				C976243A2E95A4E2007BEC30 /* ttree.h */,
+				C98749B92EA1689B00DF0CEA /* systree.h */,
 				C9D6E6A52E7168BF00602D4C /* win_man.h */,
 				C9D6E6A62E7168BF00602D4C /* win_man.c */,
 				C9D6E68D2E71678F00602D4C /* Products */,

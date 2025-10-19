@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "rbtree.h"
 #include "rbtree_ext.h"
+#include "rbtree.h"
 
 // compile using cc -o rbtree rbtree_main.c rbtree_ext.c rbtree.c
 
