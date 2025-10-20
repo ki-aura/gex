@@ -38,13 +38,8 @@ debug: $(TARGET)
 
 tidy:
 	xcrun clang-tidy $(SRC) \
-		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*' \
-		-- -Wall -Wextra
-
-bigtidy:
-	xcrun clang-tidy $(SRC) \
 		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*,-misc-include-cleaner' \
-		-- -Wall -Wextra -Wshadow -Wconversion -Wsign-conversion -Wcast-qual -Wpedantic
+		-- -Wall -Wextra
 
 maxtidy:
 	xcrun clang-tidy $(SRC) \

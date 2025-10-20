@@ -36,7 +36,6 @@ void handle_click(clickwin win, int row, int col){
 			hex.cur_col = (col *3);		
 			hex.is_hinib=true;
 		}
-//snprintf(tmp,200,"(A) col %d digit %d row %d HiNib %d",hex.cur_col, hex.cur_digit, row, (int)hex.is_hinib); popup_question(tmp, "", PTYPE_CONTINUE);
 	}
 	return;
 }
@@ -105,9 +104,27 @@ void k_right(void){
 	}
 }
 
+void handle_delete(){
+// only called by handle_in_screen_movement
+	int idx;
+
+	// if we're not on a high-nibble, then move left again
+	if(!hex.is_hinib) k_left();
+
+	// find out where we are; check if there's an edit; if so delete it
+	idx = row_digit_to_offset(hex.cur_row, hex.cur_digit);
+	search.offset = (size_t)(hex.v_start + idx);
+	found = RB_FIND(edit_tree, &edits, &search);
+	if (found) {
+		RB_REMOVE_FB(&edits, found);
+	}
+
+	// update windows as highlights will  have changed
+	update_all_windows();
+}
+
 void handle_in_screen_movement(int k){
 app.lastkey = k;
-int idx;
 
 	switch (k){
 	case KEY_TAB:
@@ -127,19 +144,8 @@ int idx;
 		// do key left
 		k_left();
 		// maybe delete (i.e. undo)
-		if(k != KEY_LEFT){
-			// if we're not on a high-nibble, then move left again
-			if(!hex.is_hinib) k_left();
-			// find out where we are; check if there's an edit; if so delete it
-			idx = row_digit_to_offset(hex.cur_row, hex.cur_digit);
-			search.offset = (size_t)(hex.v_start + idx);
-			found = RB_FIND(edit_tree, &edits, &search);
-			if (found) {
-				RB_REMOVE_FB(&edits, found);
-			}
-
-			// update windows as highlights will  have changed
-			update_all_windows();
+		if(k != KEY_LEFT) {
+			handle_delete();
 		}
 		break;
 		

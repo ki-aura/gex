@@ -24,7 +24,7 @@
 
 #include "rbtree.h"
 
-#define GEX_VERSION "2.2.1"
+#define GEX_VERSION "2.2.2"
 
 // keys we need that aren't already defined by ncurses
 #define KEY_ESCAPE 27
