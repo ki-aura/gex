@@ -109,8 +109,6 @@ void handle_global_keys(int k);
 bool initial_setup(int argc, char *argv[]);
 int final_close(void);
 clickwin get_window_click(int *row, int *col);
-bool create_main_menu(void);
-void example_dynamic_rbtree(void);
 
 
 extern appdef app;
