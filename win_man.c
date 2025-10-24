@@ -325,13 +325,12 @@ void example_dynamic_rbtree(void)
 	struct FByte s, *f; 		// s for search criteria, *f pointer to found node
 	char proof[3] = "xy"; 		// update xy to ab and prove it worked
 
+	popup_question(proof, "", PTYPE_CONTINUE);
+
 	//push 7,a
 	new_node = xmalloc(sizeof(*new_node));
 	new_node->offset = 7;
-	// DEMO ONLY. This next line BAD programming, but functionally equivalent of -> by
-	// dereferencing new_node and then using the . operator. Brackets are required as
-	// . has a higher operator order than *, so otherwise it would not compile
-	(*new_node).byte = 'a';
+	new_node->byte = 'a';
 	RB_INSERT(edit_tree,&fred,new_node);
 
 	// push 4,b
