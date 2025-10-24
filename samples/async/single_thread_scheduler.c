@@ -12,7 +12,7 @@
 
 // External library compilation instruction (not C code, kept as a note)
 ///////////////////
-/////// cc -o scheduler scheduler.c gheap.c -lncurses
+/////// cc -o scheduler single_thread_scheduler.c gheap.c termios_handler.c 
 ///////////////////
 
 // --- APPLICATION-SPECIFIC TYPEDEFS ---

@@ -1,7 +1,6 @@
-From Project Folder
-===================
 git tag --list
 grep  "GEX_VERSION" gex.h
+
 git add .
 git commit -m "ready for v2.2.2"
 git push
@@ -18,10 +17,3 @@ nano Formula/gex.rb
 git add Formula/gex.rb
 git commit -m "ready for v2.2.2"
 git push
-
-Test
-====
-brew update && brew install gex
-gex -h
-gex /opt/homebrew/Library/Taps/ki-aura/homebrew-gex/Formula/gex.rb
-brew uninstall gex

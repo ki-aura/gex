@@ -32,7 +32,7 @@ release: CFLAGS = $(CFLAGS_COMMON)
 release: $(TARGET)
 
 # debug build
-debug: CFLAGS = -Wall -Wextra -fsanitize=address -g -O0
+debug: CFLAGS = -Wall -Wextra -fsanitize=address -g -O1 -Wshadow  -Wcast-qual -Wpedantic
 debug: $(TARGET)
 
 
@@ -43,7 +43,7 @@ tidy:
 
 maxtidy:
 	xcrun clang-tidy $(SRC) \
-		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*,-misc-include-cleaner, bugprone-*,-bugprone-reserved-identifier' \
+		-checks='clang-diagnostic-*,clang-analyzer-*,misc-*,-misc-include-cleaner' \
 		-- -Wall -Wextra -Wshadow -Wconversion -Wsign-conversion -Wcast-qual -Wpedantic
 
 # Build rules

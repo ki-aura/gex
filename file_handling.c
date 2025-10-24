@@ -67,7 +67,7 @@ bool open_file(int argc, char *argv[])
 				"  gex <file name>         edit file\n"
 				"  gex -v or --version     shows current version\n"
 				"  gex -h or --help        displays this message\n", stderr);
-		final_close(0);
+		final_close();
 		return false;
 	} else {
 		if (strcmp(argv[1],"--version")==0 || strcmp(argv[1],"-v")==0 ) {
@@ -75,7 +75,7 @@ bool open_file(int argc, char *argv[])
 			endwin();
             snprintf(tmp, 40, "Gex Version: ki-aura %s\n", GEX_VERSION);
 			fputs(tmp, stderr);
-			final_close(0);
+			final_close();
 			return false;
 		} else {
 			app.fname = argv[1];
@@ -315,7 +315,7 @@ unsigned long bytedel, del_offset, max_pos;
 			if (helperfunction_open_file()) 			
 				create_windows();
 			else 
-				final_close(0);
+				final_close();
     	}
     }
 }

@@ -8,6 +8,7 @@
 
 
 // Global variables
+volatile sig_atomic_t sigint_received = 0;
 status_windef status = {.win = NULL, .border = NULL};
 hex_windef hex = {.win = NULL, .border = NULL};
 ascii_windef ascii = {.win = NULL, .border = NULL};
@@ -63,8 +64,7 @@ bool initial_setup(int argc, char *argv[])
 }
 
 
-void final_close(int signum)
-{
+int final_close(void){
 	// Clean up ncurses
 	delete_windows();
 	clear();
@@ -79,20 +79,15 @@ void final_close(int signum)
 	RB_CLEAR_TREE(&edits);
 	
 	// close file
-	close_file(); 
-	
-	// user message for forced close
-	if (signum == SIGINT){
-		fputs("Ended by Ctrl+C\n", stderr);
-		exit(EXIT_FAILURE);}
-	if (signum == SIGQUIT){
-		fputs("Ended by Ctrl+\\\n", stderr);
-		exit(EXIT_FAILURE);}
-	if (signum == SIGTERM){
-		fputs("Programme Killed\n", stderr);
-		exit(EXIT_FAILURE);}
-		
-	exit(0);
+	close_file(); 		
+
+    switch (sigint_received) {
+        case 1: fputs("Ended by Ctrl+C\n", stderr); return EXIT_FAILURE;
+        case 2: fputs("Ended by Ctrl+\\\n", stderr); return EXIT_FAILURE;
+        case 3: fputs("Program Killed\n", stderr); return EXIT_FAILURE;
+        case 4: fputs("Unknown Cause of Exit\n", stderr); return EXIT_FAILURE;
+        default: return EXIT_SUCCESS;
+	}
 }
 
 void handle_global_keys(int k) {
@@ -183,20 +178,40 @@ clickwin get_window_click(int *row, int *col)
     return WIN_OTHER;
 }
 
+
+void signal_handler(int signum) {
+	if (sigint_received == 0) {
+		if      (signum == SIGINT)  sigint_received = 1;
+		else if (signum == SIGQUIT) sigint_received = 2;
+		else if (signum == SIGTERM) sigint_received = 3;
+		else                        sigint_received = 4; // unknown signal
+	}
+}
+
+void setup_signals(void)
+{
+    struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = signal_handler;
+    sa.sa_flags = SA_RESTART;
+
+    sigaction(SIGINT,  &sa, NULL);
+    sigaction(SIGQUIT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+}
+
 int main(int argc, char *argv[]) 
 {
-signal(SIGINT, final_close);
-signal(SIGQUIT, final_close);
-signal(SIGTERM, final_close);
-
+	// handle signal interupts
+	setup_signals();
 	// Initial app setup
 	if(initial_setup(argc, argv)){
 		// everything opened fine... crack on!
 		create_windows();
 	
-		int ch = KEY_REFRESH; // doesn't trigger anything
+		int ch = KEY_REFRESH; 
 		// Main loop to handle input
-		while (ch != KEY_SEND) {
+		while (sigint_received == 0) {
 			// if reresh, handle keys before we wait for another char
 			// used by multiple functions to force a screen refresh
 			if(ch == KEY_REFRESH) handle_global_keys(ch);
@@ -227,8 +242,8 @@ signal(SIGTERM, final_close);
 		fputs("File does not exist\n", stderr);
 	}
 	// tidy up
-	final_close(0);		
-	return 0;
+	int rc = final_close();		
+	return rc;
 }
 
 // menu functions
@@ -281,7 +296,8 @@ signal(SIGTERM, final_close);
                 highlight = (highlight + 1) % mi; break;
             case KEY_UP:
                 highlight = (highlight - 1 + mi) % mi; break;
-            case KEY_MAC_ENTER:  // Enter
+            case KEY_ENTER: 
+            case KEY_MAC_ENTER: 
                 choice = highlight; break;
             case 'q': case 'Q':
                 choice = 0; break;

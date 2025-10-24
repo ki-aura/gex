@@ -24,7 +24,7 @@
 
 #include "rbtree.h"
 
-#define GEX_VERSION "2.2.2"
+#define GEX_VERSION "2.2.3"
 
 // keys we need that aren't already defined by ncurses
 #define KEY_ESCAPE 27
@@ -107,7 +107,7 @@ typedef struct {
 
 void handle_global_keys(int k);
 bool initial_setup(int argc, char *argv[]);
-void final_close(int signum);
+int final_close(void);
 clickwin get_window_click(int *row, int *col);
 bool create_main_menu(void);
 void example_dynamic_rbtree(void);

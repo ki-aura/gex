@@ -9,16 +9,15 @@ static unsigned char HELPER_hexnib_to_char(unsigned char hex_nibble) {
     if (hex_nibble < 10) return hex_nibble + '0';
     else return hex_nibble - 10 + 'A';
 }
+
 // helper function for bit to byte functions only 
 static int HELPER_nib_to_hexval(const char c) {
 	if (c >= '0' && c <= '9') return c - '0';
 	if (c >= 'A' && c <= 'F') return c - 'A' + 10;
 	if (c >= 'a' && c <= 'f') return c - 'a' + 10;
 	// if we get here bad things have happened...
-	snprintf(tmp, 200, "invalid hex digit found %c %u", c, c );
-	popup_question(tmp, "", PTYPE_CONTINUE);
-	assert(0 && "invalid digit in hex");
-	return -1; // error
+    fprintf(stderr, "Invalid hex digit found %c %u", c, c);
+    exit(EXIT_FAILURE);
 }
 
 // MAIN FUNCTIONS HEX & ASCII CONVERSION FUNCTIONS //
@@ -108,7 +107,6 @@ void *xrealloc(void *ptr, size_t size) {
     // If realloc fails, the original block pointed to by ptr is left unchanged.
     if (new_ptr == NULL && size > 0) {
         fprintf(stderr, "Fatal: Out of memory (realloc %zu bytes).\n", size);
-        free(ptr); // we can at least free up the memory currently pointed to
         exit(EXIT_FAILURE);
     }
     return new_ptr;

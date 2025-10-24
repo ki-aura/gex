@@ -104,7 +104,7 @@ void k_right(void){
 	}
 }
 
-void handle_delete(){
+void handle_delete(void){
 // only called by handle_in_screen_movement
 	int idx;
 
