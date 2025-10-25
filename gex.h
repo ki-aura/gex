@@ -78,11 +78,6 @@ typedef struct {
 	int grid;	// grid size in total hex / ascii digits (portion of file)
 	// file handling and viewing
 	unsigned long v_start;	// file offset location of start of grid
-	unsigned long v_end;	// file location of end of grid
-
-	int map_copy_len;
-	int max_row;	// this is the max row we can edit if screen > file size
-	int max_col; 	// this is the max col on the max row we can edit if screen > file size
 	int max_digit; // this is the max digit on the max row we can edit if screen > file size
 	int cur_row;	// cursor location (i.e. where to show it rather than where it is)
 	int cur_col;

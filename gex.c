@@ -57,8 +57,6 @@ bool initial_setup(int argc, char *argv[])
 	
 	// show cursor
 	curs_set(2);
-	wmove(hex.win, hex.cur_row, hex.cur_col);
-	wrefresh(hex.win);
 	
 	return open_file(argc,argv);
 }
