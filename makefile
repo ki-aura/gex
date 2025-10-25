@@ -32,7 +32,7 @@ release: CFLAGS = $(CFLAGS_COMMON)
 release: $(TARGET)
 
 # debug build
-debug: CFLAGS = -Wall -Wextra -fsanitize=address -g -O1 -Wshadow  -Wcast-qual -Wpedantic
+debug: CFLAGS = -Wall -Wextra -fsanitize=address -g -O0 -Wshadow  -Wcast-qual -Wpedantic
 debug: $(TARGET)
 
 

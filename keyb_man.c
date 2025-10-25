@@ -283,8 +283,6 @@ void handle_edit_keys(int k){
             //is the edit the same as the underlying file?
             if( full_edit_byte == full_file_byte){
                 // if it is, delete any change that's stored
-				search.offset = (size_t)(hex.v_start + idx);
-				found = RB_FIND(edit_tree, &edits, &search);
 				if (found) 
 					RB_REMOVE_FB(&edits, found);
             } else { //otherwise, push the change

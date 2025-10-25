@@ -30,10 +30,8 @@
 #define KEY_ESCAPE 27
 #define KEY_MAC_ENTER 10	// KEY_ENTER already defined as send key for terminal
 #define KEY_TAB 9
-#define KEY_SPACE 32
 #define KEY_MAC_DELETE 127
 #define KEY_OTHER_DELETE 8		// e.g. on debian 
-#define KEY_LEFT_PROXY 222
 #define KEY_NCURSES_BACKSPACE KEY_BACKSPACE // this is 263
 
 // types of popup question
