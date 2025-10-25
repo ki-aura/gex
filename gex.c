@@ -206,33 +206,42 @@ int main(int argc, char *argv[])
 	if(initial_setup(argc, argv)){
 		// everything opened fine... crack on!
 		create_windows();
-	
-		int ch = KEY_REFRESH; 
+
+		int ch = KEY_REFRESH;
+		
 		// Main loop to handle input
 		while (sigint_received == 0) {
-			// if reresh, handle keys before we wait for another char
-			// used by multiple functions to force a screen refresh
-			if(ch == KEY_REFRESH) handle_global_keys(ch);
-			
-			if(ch == KEY_ESCAPE) {
-				if(create_main_menu()) { // true if quit is selected
-					if (RB_SIZE() != 0) {// there are unsaved changes
-					    if(popup_question("Abandon unsaved changes?",
-            					"This action can not be undone (y/n)", PTYPE_YN)) {
-            				break; // we want to abandon changes
-            			} else {
-            				continue; // we don't want to abandon changes
-            			}
-            		} else {
-            			break;  // there are no changes to abandon
-            		}
-            	}
-            }
-			
+			// Handle forced refresh before waiting for another key
+			if (ch == KEY_REFRESH)
+				handle_global_keys(ch);
+		
+			// Process ESC → main menu
+			if (ch == KEY_ESCAPE) {
+				int quit_selected = create_main_menu();
+				if (quit_selected) {
+					int unsaved = (RB_SIZE() != 0);
+					if (!unsaved) {
+						break; // nothing to lose
+					}
+		
+					int confirm = popup_question(
+						"Abandon unsaved changes?",
+						"This action can not be undone (y/n)",
+						PTYPE_YN
+					);
+		
+					if (confirm)
+						break;     // abandon changes
+					else
+						continue;
+				}
+			}
+		
+			// Normal key handling
 			ch = getch();
 			app.lastkey = ch;
 			handle_global_keys(ch);
-		} 
+		}
 	} else {
 		// initial setup failed
 		putp(tigetstr("rmcup"));
