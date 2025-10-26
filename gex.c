@@ -26,6 +26,11 @@ struct FByte *found, *nod;
 
 bool initial_setup(int argc, char *argv[])
 {
+	// check for command line options and valid file
+	if(!open_file(argc,argv)){
+		return false;
+	}
+	
 	// Initialize ncurses & set defaults 
 	initscr();
 	mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED |
@@ -58,7 +63,7 @@ bool initial_setup(int argc, char *argv[])
 	// show cursor
 	curs_set(2);
 	
-	return open_file(argc,argv);
+	return true;
 }
 
 
@@ -246,7 +251,6 @@ int main(int argc, char *argv[])
 		// initial setup failed
 		putp(tigetstr("rmcup"));
 		endwin();
-		fputs("File does not exist\n", stderr);
 	}
 	// tidy up
 	int rc = final_close();		

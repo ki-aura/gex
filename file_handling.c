@@ -53,34 +53,38 @@ bool helperfunction_open_file(void){
 
 bool open_file(int argc, char *argv[])
 {
-	bool valid_file = true;
-	// check we have something passed on the command line
-	if (argc != 2) valid_file = false;
-	// check for help; version handled below
-	if (valid_file) 
-		if (strcmp( argv[1],"--help")==0 || strcmp( argv[1],"-h")==0 ) valid_file = false;
-	
-	if (!valid_file){
-		putp(tigetstr("rmcup"));
-		endwin();
+	// check we have something passed on the command line (-h -v or a file name)
+	// if not; simulate -h for help
+	char *option;
+	char dummy_option[] = "-h";
+	if(argc != 2)
+		option = dummy_option;
+	else
+		option = argv[1];
+
+	if (strcmp( option,"--help")==0 || strcmp( option,"-h")==0 ) {		
 		fputs(	"Usage:\n"
 				"  gex <file name>         edit file\n"
 				"  gex -v or --version     shows current version\n"
 				"  gex -h or --help        displays this message\n", stderr);
-		final_close();
 		return false;
+	} 
+	
+	if (strcmp(option,"--version")==0 || strcmp(option,"-v")==0 ) {
+		char *buf=xmalloc(51);
+		snprintf(buf, 50, "Gex Version: ki-aura %s\n", GEX_VERSION);
+		fputs(buf, stderr);
+		free(buf);
+		return false;
+	} 
+	
+	// we've been passed a file
+	app.fname = option;
+	if(helperfunction_open_file()){
+		return true;
 	} else {
-		if (strcmp(argv[1],"--version")==0 || strcmp(argv[1],"-v")==0 ) {
-			putp(tigetstr("rmcup"));
-			endwin();
-            snprintf(tmp, 40, "Gex Version: ki-aura %s\n", GEX_VERSION);
-			fputs(tmp, stderr);
-			final_close();
-			return false;
-		} else {
-			app.fname = argv[1];
-			return helperfunction_open_file();
-		}
+		fputs("File does not exist", stderr);
+		return false;
 	}
 }
 
