@@ -1,18 +1,18 @@
-#include <fcntl.h>    // Provides file control functions (e.g., open, creat, file status flags)
-#include <assert.h>   // Provides the assert macro for debugging and checking invariant conditions
-#include <ctype.h>    // Provides functions for character classification (e.g., isalpha, isdigit) and conversion
-#include <errno.h>    // Defines macros for reporting error conditions (e.g., errno, EACCES)
-#include <limits.h>   // Defines characteristics of integral types (e.g., INT_MAX, CHAR_BIT)
-#include <ncurses.h>  // Provides functions for terminal-independent screen-handling and text-based UIs
-#include <stdarg.h>   // Provides support for functions with variable numbers of arguments (variadic functions)
-#include <stdbool.h>  // Defines the boolean type bool and the macros true and false
-#include <stdint.h>   // Defines exact-width integer types (e.g., int32_t, uint64_t)
-#include <stdio.h>    // Provides standard input/output functions (e.g., printf, scanf, file I/O)
-#include <stdlib.h>   // Provides general utilities (e.g., memory allocation, random numbers, process control)
-#include <string.h>   // Provides functions for manipulating strings and memory blocks (e.g., strcpy, memcpy)
-#include <sys/mman.h> // Provides memory management declarations (e.g., mmap, munmap)
-#include <sys/stat.h> // Provides functions for retrieving and manipulating file status (e.g., stat, fstat)
-#include <unistd.h>   // Provides access to POSIX operating system API (e.g., fork, exec, read, close)
+#include <fcntl.h>		// Provides file control functions (e.g., open, creat, file status flags)
+#include <assert.h>		// Provides the assert macro for debugging and checking invariant conditions
+#include <ctype.h>		// Provides functions for character classification (e.g., isalpha, isdigit) and conversion
+#include <errno.h>		// Defines macros for reporting error conditions (e.g., errno, EACCES)
+#include <limits.h>		// Defines characteristics of integral types (e.g., INT_MAX, CHAR_BIT)
+#include <ncurses.h>		// Provides functions for terminal-independent screen-handling and text-based UIs
+#include <stdarg.h>		// Provides support for functions with variable numbers of arguments (variadic functions)
+#include <stdbool.h>		// Defines the boolean type bool and the macros true and false
+#include <stdint.h>		// Defines exact-width integer types (e.g., int32_t, uint64_t)
+#include <stdio.h>		// Provides standard input/output functions (e.g., printf, scanf, file I/O)
+#include <stdlib.h>		// Provides general utilities (e.g., memory allocation, random numbers, process control)
+#include <string.h>		// Provides functions for manipulating strings and memory blocks (e.g., strcpy, memcpy)
+#include <sys/mman.h>		// Provides memory management declarations (e.g., mmap, munmap)
+#include <sys/stat.h>		// Provides functions for retrieving and manipulating file status (e.g., stat, fstat)
+#include <unistd.h>		// Provides access to POSIX operating system API (e.g., fork, exec, read, close)
 
 #include "file_handling.h"
 #include "rbtree.h"
@@ -20,8 +20,8 @@
 #include "gex_helper_funcs.h"
 #include "win_man.h"
 
-
-bool helperfunction_open_file(void){
+bool helperfunction_open_file(void)
+{
 	// try to open it
 	app.fd = open(app.fname, O_RDWR);
 	if (app.fd < 0) {
@@ -37,15 +37,17 @@ bool helperfunction_open_file(void){
 	// check file not empty
 	if (app.fs.st_size < 1) {
 		close(app.fd);
-		return false;	
+		return false;
 	} else {
 		app.fsize = app.fs.st_size;
 	}
 
-	app.map = mmap(NULL, app.fsize, PROT_READ | PROT_WRITE, MAP_SHARED, app.fd, 0);
+	app.map =
+	    mmap(NULL, app.fsize, PROT_READ | PROT_WRITE, MAP_SHARED, app.fd,
+		 0);
 	if (app.map == MAP_FAILED) {
 		close(app.fd);
-		return false;	
+		return false;
 	}
 
 	return true;
@@ -57,30 +59,31 @@ bool open_file(int argc, char *argv[])
 	// if not; simulate -h for help
 	char *option;
 	char dummy_option[] = "-h";
-	if(argc != 2)
+	if (argc != 2)
 		option = dummy_option;
 	else
 		option = argv[1];
 
-	if (strcmp( option,"--help")==0 || strcmp( option,"-h")==0 ) {		
-		fputs(	"Usage:\n"
-				"  gex <file name>         edit file\n"
-				"  gex -v or --version     shows current version\n"
-				"  gex -h or --help        displays this message\n", stderr);
+	if (strcmp(option, "--help") == 0 || strcmp(option, "-h") == 0) {
+		fputs("Usage:\n"
+		      "  gex <file name>         edit file\n"
+		      "  gex -v or --version     shows current version\n"
+		      "  gex -h or --help        displays this message\n",
+		      stderr);
 		return false;
-	} 
-	
-	if (strcmp(option,"--version")==0 || strcmp(option,"-v")==0 ) {
-		char *buf=xmalloc(51);
+	}
+
+	if (strcmp(option, "--version") == 0 || strcmp(option, "-v") == 0) {
+		char *buf = xmalloc(51);
 		snprintf(buf, 50, "Gex Version: ki-aura %s\n", GEX_VERSION);
 		fputs(buf, stderr);
 		free(buf);
 		return false;
-	} 
-	
+	}
+
 	// we've been passed a file
 	app.fname = option;
-	if(helperfunction_open_file()){
+	if (helperfunction_open_file()) {
 		return true;
 	} else {
 		fputs("File does not exist", stderr);
@@ -94,13 +97,15 @@ void close_file(void)
 	close(app.fd);
 }
 
-void save_changes(void){
+void save_changes(void)
+{
 	if (RB_SIZE() == 0)
 		popup_question("No changes made",
-			"Press any key to continue", PTYPE_CONTINUE);
-	else if(popup_question("Are you sure you want to save changes?",
-			"This action can not be undone (y/n)", PTYPE_YN)){
-	
+			       "Press any key to continue", PTYPE_CONTINUE);
+	else if (popup_question("Are you sure you want to save changes?",
+				"This action can not be undone (y/n)",
+				PTYPE_YN)) {
+
 		RB_FOREACH(nod, edit_tree, &edits) {
 			app.map[nod->offset] = nod->byte;
 		}
@@ -109,221 +114,254 @@ void save_changes(void){
 		msync(app.map, app.fsize, MS_SYNC);
 		// clear change history as these are now permanent
 		RB_CLEAR_TREE(&edits);
-        
+
 		// refresh to get rid of old change highlights
 		update_all_windows();
 		handle_global_keys(KEY_REFRESH);
-	}	
+	}
 }
 
-void abandon_changes(void){
-    if (RB_SIZE()== 0)
-        popup_question("No changes to abandon",
-            "Press any key to continue", PTYPE_CONTINUE);
-    else if(popup_question("Are you sure you want to abandon changes?",
-            "This action can not be undone (y/n)", PTYPE_YN)){
-    
-        // abandon changes
-        RB_CLEAR_TREE(&edits);
-        // refresh to get rid of old change highlights
-        update_all_windows();
-        handle_global_keys(KEY_REFRESH);
-    }
-}
+void abandon_changes(void)
+{
+	if (RB_SIZE() == 0)
+		popup_question("No changes to abandon",
+			       "Press any key to continue", PTYPE_CONTINUE);
+	else if (popup_question("Are you sure you want to abandon changes?",
+				"This action can not be undone (y/n)",
+				PTYPE_YN)) {
 
+		// abandon changes
+		RB_CLEAR_TREE(&edits);
+		// refresh to get rid of old change highlights
+		update_all_windows();
+		handle_global_keys(KEY_REFRESH);
+	}
+}
 
 // helper: build temp filename "<fname>.gex"
-static char *make_temp_name(const char *fname) {
-    size_t len = strlen(fname) + 8;
-    char *tmpnam = xmalloc(len);
-    snprintf(tmpnam, len, "%s.gextmp", fname);
-    return tmpnam;
+static char *make_temp_name(const char *fname)
+{
+	size_t len = strlen(fname) + 8;
+	char *tmpnam = xmalloc(len);
+	snprintf(tmpnam, len, "%s.gextmp", fname);
+	return tmpnam;
 }
 
 // portable copy from fd src to fd dst for count bytes
-static int copy_bytes(int dst, int src, off_t count) {
-	int COPY_BUF_SIZE=65536;
-    char buf[COPY_BUF_SIZE];
-    while (count > 0) {
-        ssize_t to_read = count < COPY_BUF_SIZE ? count : COPY_BUF_SIZE;
-        ssize_t n = read(src, buf, to_read);
-        if (n <= 0) return -1; // error or unexpected EOF
-        if (write(dst, buf, n) != n) return -1;
-        count -= n;
-    }
-    return 0;
+static int copy_bytes(int dst, int src, off_t count)
+{
+	int COPY_BUF_SIZE = 65536;
+	char buf[COPY_BUF_SIZE];
+	while (count > 0) {
+		ssize_t to_read = count < COPY_BUF_SIZE ? count : COPY_BUF_SIZE;
+		ssize_t n = read(src, buf, to_read);
+		if (n <= 0)
+			return -1;	// error or unexpected EOF
+		if (write(dst, buf, n) != n)
+			return -1;
+		count -= n;
+	}
+	return 0;
 }
 
 // Insert nbytes of zeros after f_offset
-int file_insert(off_t f_offset, size_t nbytes) {
-    int ret = -1;
-    char *tmpname = make_temp_name(app.fname);
-    if (!tmpname) return -1;
+int file_insert(off_t f_offset, size_t nbytes)
+{
+	int ret = -1;
+	char *tmpname = make_temp_name(app.fname);
+	if (!tmpname)
+		return -1;
 
-    // unmap original file
-    if (app.map) {
-        munmap(app.map, app.fsize);
-        app.map = NULL;
-    }
+	// unmap original file
+	if (app.map) {
+		munmap(app.map, app.fsize);
+		app.map = NULL;
+	}
 
-    int tfd = open(tmpname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (tfd < 0) goto out_free;
+	int tfd = open(tmpname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (tfd < 0)
+		goto out_free;
 
-    // copy head
-    if (lseek(app.fd, 0, SEEK_SET) < 0) goto out_close;
-    if (f_offset > 0) {
-        if (copy_bytes(tfd, app.fd, f_offset) < 0) goto out_close;
-    }
+	// copy head
+	if (lseek(app.fd, 0, SEEK_SET) < 0)
+		goto out_close;
+	if (f_offset > 0) {
+		if (copy_bytes(tfd, app.fd, f_offset) < 0)
+			goto out_close;
+	}
 
-    // write inserted bytes
-    char *zeros = xcalloc(1, nbytes);
-    if (write(tfd, zeros, nbytes) != (ssize_t)nbytes) { free(zeros); goto out_close; }
-    free(zeros);
+	// write inserted bytes
+	char *zeros = xcalloc(1, nbytes);
+	if (write(tfd, zeros, nbytes) != (ssize_t) nbytes) {
+		free(zeros);
+		goto out_close;
+	}
+	free(zeros);
 
-    // copy tail
-    off_t tail = app.fsize - f_offset;
-    if (tail > 0) {
-        if (copy_bytes(tfd, app.fd, tail) < 0) goto out_close;
-    }
+	// copy tail
+	off_t tail = app.fsize - f_offset;
+	if (tail > 0) {
+		if (copy_bytes(tfd, app.fd, tail) < 0)
+			goto out_close;
+	}
 
-    ret = 0;
+	ret = 0;
 
-out_close:
-    close(tfd);
-    if (ret == 0) {
-        close(app.fd);
-        if (rename(tmpname, app.fname) == 0) {
-            app.fd = open(app.fname, O_RDWR);
-            if (app.fd >= 0) {
-                struct stat st;
-                if (fstat(app.fd, &st) == 0)
-                    app.fsize = st.st_size;
-                else ret = -1;
-            } else ret = -1;
-        } else ret = -1;
-    } else {
-        unlink(tmpname);
-    }
+      out_close:
+	close(tfd);
+	if (ret == 0) {
+		close(app.fd);
+		if (rename(tmpname, app.fname) == 0) {
+			app.fd = open(app.fname, O_RDWR);
+			if (app.fd >= 0) {
+				struct stat st;
+				if (fstat(app.fd, &st) == 0)
+					app.fsize = st.st_size;
+				else
+					ret = -1;
+			} else
+				ret = -1;
+		} else
+			ret = -1;
+	} else {
+		unlink(tmpname);
+	}
 
-out_free:
-    free(tmpname);
-    return ret;
+      out_free:
+	free(tmpname);
+	return ret;
 }
 
 // Delete nbytes after f_offset
-int file_delete(off_t f_offset, size_t nbytes) {
-    int ret = -1;
-    char *tmpname = make_temp_name(app.fname);
-    if (!tmpname) return -1;
+int file_delete(off_t f_offset, size_t nbytes)
+{
+	int ret = -1;
+	char *tmpname = make_temp_name(app.fname);
+	if (!tmpname)
+		return -1;
 
-    // unmap original file
-    if (app.map) {
-        munmap(app.map, app.fsize);
-        app.map = NULL;
-    }
+	// unmap original file
+	if (app.map) {
+		munmap(app.map, app.fsize);
+		app.map = NULL;
+	}
 
-    int tfd = open(tmpname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (tfd < 0) goto out_free;
+	int tfd = open(tmpname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (tfd < 0)
+		goto out_free;
 
-    // copy head
-    if (lseek(app.fd, 0, SEEK_SET) < 0) goto out_close;
-    if (f_offset > 0) {
-        if (copy_bytes(tfd, app.fd, f_offset) < 0) goto out_close;
-    }
+	// copy head
+	if (lseek(app.fd, 0, SEEK_SET) < 0)
+		goto out_close;
+	if (f_offset > 0) {
+		if (copy_bytes(tfd, app.fd, f_offset) < 0)
+			goto out_close;
+	}
 
-    // skip nbytes in source
-    if (lseek(app.fd, f_offset + nbytes, SEEK_SET) < 0) goto out_close;
+	// skip nbytes in source
+	if (lseek(app.fd, f_offset + nbytes, SEEK_SET) < 0)
+		goto out_close;
 
-    // copy tail
-    off_t tail = app.fsize - (f_offset + nbytes);
-    if (tail > 0) {
-        if (copy_bytes(tfd, app.fd, tail) < 0) goto out_close;
-    }
+	// copy tail
+	off_t tail = app.fsize - (f_offset + nbytes);
+	if (tail > 0) {
+		if (copy_bytes(tfd, app.fd, tail) < 0)
+			goto out_close;
+	}
 
-    ret = 0;
+	ret = 0;
 
-out_close:
-    close(tfd);
-    if (ret == 0) {
-        close(app.fd);
-        if (rename(tmpname, app.fname) == 0) {
-            app.fd = open(app.fname, O_RDWR);
-            if (app.fd >= 0) {
-                struct stat st;
-                if (fstat(app.fd, &st) == 0)
-                    app.fsize = st.st_size;
-                else ret = -1;
-            } else ret = -1;
-        } else ret = -1;
-    } else {
-        unlink(tmpname);
-    }
+      out_close:
+	close(tfd);
+	if (ret == 0) {
+		close(app.fd);
+		if (rename(tmpname, app.fname) == 0) {
+			app.fd = open(app.fname, O_RDWR);
+			if (app.fd >= 0) {
+				struct stat st;
+				if (fstat(app.fd, &st) == 0)
+					app.fsize = st.st_size;
+				else
+					ret = -1;
+			} else
+				ret = -1;
+		} else
+			ret = -1;
+	} else {
+		unlink(tmpname);
+	}
 
-out_free:
-    free(tmpname);
-    return ret;
+      out_free:
+	free(tmpname);
+	return ret;
 }
 
+void insert_bytes(void)
+{
+	unsigned long byteins, ins_offset;
+	if (RB_SIZE() > 0)
+		popup_question("Save changes before inserting bytes",
+			       "Press any key to continue", PTYPE_CONTINUE);
+	else {
+		ins_offset = cursor_full_file_offset();
+		// tell where insert will be, get number of bytes to insert, warn 
+		snprintf(tmp, 250,
+			 "How Many Bytes to INSERT AT offset %lu? (max 1024)",
+			 ins_offset);
+		// hex.v_start = will either be a new valid value or 0
+		byteins = popup_question(tmp, "", PTYPE_UNSIGNED_LONG);
+		if (byteins > 1024)
+			byteins = 1024;
+		if (byteins <= 0)
+			return;
 
-
-void insert_bytes(void){
-unsigned long byteins, ins_offset;
-    if (RB_SIZE() > 0)
-        popup_question("Save changes before inserting bytes",
-            "Press any key to continue", PTYPE_CONTINUE);
-    else {
-    	ins_offset = cursor_full_file_offset();
-    	// tell where insert will be, get number of bytes to insert, warn 
-    	snprintf(tmp, 250, "How Many Bytes to INSERT AT offset %lu? (max 1024)",ins_offset) ;
-        // hex.v_start = will either be a new valid value or 0
-        byteins = popup_question(tmp, "", PTYPE_UNSIGNED_LONG);
-		if(byteins>1024) byteins=1024;
-		if(byteins<=0) return;
-        
-    	snprintf(tmp, 250, "Confirm: Insert %lu Bytes?",byteins) ;        
-        if( popup_question(tmp, "This Action Can NOT Be Undone (y/n)", PTYPE_YN)) {
+		snprintf(tmp, 250, "Confirm: Insert %lu Bytes?", byteins);
+		if (popup_question
+		    (tmp, "This Action Can NOT Be Undone (y/n)", PTYPE_YN)) {
 			// close file, create new file, rename, open new file
 			file_insert(ins_offset, byteins);
 			helperfunction_open_file();
 			// and refresh
 			create_windows();
-        }
-    }
+		}
+	}
 }
 
-void delete_bytes(void){
-unsigned long bytedel, del_offset, max_pos;
-    if (RB_SIZE() > 0)
-        popup_question("Save changes before deleting bytes",
-            "Press any key to continue", PTYPE_CONTINUE);
-    else {
-    	// tell where insert will be, get number of bytes to insert,
-    	del_offset = cursor_full_file_offset();
+void delete_bytes(void)
+{
+	unsigned long bytedel, del_offset, max_pos;
+	if (RB_SIZE() > 0)
+		popup_question("Save changes before deleting bytes",
+			       "Press any key to continue", PTYPE_CONTINUE);
+	else {
+		// tell where insert will be, get number of bytes to insert,
+		del_offset = cursor_full_file_offset();
 		// check we're not trying to delete past end of file
-    	max_pos = app.fsize - del_offset;
-    	max_pos = max_pos <= 1024 ? max_pos : 1024;
-    	
+		max_pos = app.fsize - del_offset;
+		max_pos = max_pos <= 1024 ? max_pos : 1024;
+
 		// find how many bytes to delete
-    	snprintf(tmp, 250, "How Many Bytes to DELETE FROM offset %lu? (max %d)", del_offset, (int)max_pos);
-        bytedel = popup_question(tmp, "", PTYPE_UNSIGNED_LONG);
-        // sense checks
-		if(bytedel>max_pos) bytedel=max_pos;
-		if(bytedel<=0) return;
-		
-    	snprintf(tmp, 250, "Confirm: Delete %lu Bytes?",bytedel) ;        
-        if( popup_question(tmp, "This Action Can NOT Be Undone (y/n)", PTYPE_YN)) {
+		snprintf(tmp, 250,
+			 "How Many Bytes to DELETE FROM offset %lu? (max %d)",
+			 del_offset, (int) max_pos);
+		bytedel = popup_question(tmp, "", PTYPE_UNSIGNED_LONG);
+		// sense checks
+		if (bytedel > max_pos)
+			bytedel = max_pos;
+		if (bytedel <= 0)
+			return;
+
+		snprintf(tmp, 250, "Confirm: Delete %lu Bytes?", bytedel);
+		if (popup_question
+		    (tmp, "This Action Can NOT Be Undone (y/n)", PTYPE_YN)) {
 			// close file, create new file, rename, open new file
 			file_delete(del_offset, bytedel);
-			
+
 			// We only want to open the file if it's still > 1 byte; otherwise exit 
-			if (helperfunction_open_file()) 			
+			if (helperfunction_open_file())
 				create_windows();
-			else 
+			else
 				final_close();
-    	}
-    }
+		}
+	}
 }
-
-
-
-

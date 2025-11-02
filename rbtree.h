@@ -76,40 +76,35 @@
  * - All iteration macros expand to for-loops; SAFE variants allow node deletion inside loop.
  */
 
-#include "systree.h"   /* BSD-style sys/tree.h, vendored for portability */
+#include "systree.h"		/* BSD-style sys/tree.h, vendored for portability */
 
 /* -------------------------- Node Definition -------------------------- */
 
 struct FByte {
-    RB_ENTRY(FByte) fb_key;    /* link field for key-ordered tree */
-    size_t offset;
-    unsigned char byte;
+	RB_ENTRY(FByte) fb_key;	/* link field for key-ordered tree */
+	size_t offset;
+	unsigned char byte;
 };
 
 /* -------------------------- Tree Heads (globals) -------------------------- */
 
-RB_HEAD(edit_tree, FByte);   // defines main tree struct 
+RB_HEAD(edit_tree, FByte);	// defines main tree struct 
 extern struct edit_tree edits;
 
 /* ---------------------- RB Prototype Static ---------------------- */
 
 RB_PROTOTYPE(edit_tree, FByte, fb_key, off_cmp)
-
 /* ---------------------- Comparison Functions ---------------------- */
-
-
-
 /* Undef macros to force use of own wrappers */
 //#undef RB_INSERT
 //#undef RB_REMOVE
-
 // Replacement Insert/Remove functions
-struct FByte *RB_INSERT_FB(struct edit_tree *head, size_t offs, unsigned char byt);
+struct FByte *RB_INSERT_FB(struct edit_tree *head, size_t offs,
+			   unsigned char byt);
 struct FByte *RB_REMOVE_FB(struct edit_tree *head, struct FByte *node);
 
 // Additional functions supported by new Insert/Remove functions
 int RB_SIZE(void);
 void RB_CLEAR_TREE(struct edit_tree *head);
 
-
-#endif 
+#endif

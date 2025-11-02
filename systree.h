@@ -39,7 +39,6 @@
 #endif
 #endif
 
-
 /*
  * A red-black tree is a binary search tree with the node color as an
  * extra attribute.  It fulfills a set of conditions:
@@ -508,7 +507,6 @@ name##_RB_MINMAX(struct name *head, int val)				\
 	    ((x) != NULL) && ((y) = name##_RB_PREV(x), 1);		\
 	     (x) = (y))
 
-
 /*
  * Copyright (c) 2016 David Gwynne <dlg@openbsd.org>
  *
@@ -526,20 +524,20 @@ name##_RB_MINMAX(struct name *head, int val)				\
  */
 
 struct rb_type {
-	int		(*t_compare)(const void *, const void *);
-	void		(*t_augment)(void *);
-	unsigned int	  t_offset;	/* offset of rb_entry in type */
+	int (*t_compare)(const void *, const void *);
+	void (*t_augment)(void *);
+	unsigned int t_offset;	/* offset of rb_entry in type */
 };
 
 struct rb_tree {
-	struct rb_entry	*rbt_root;
+	struct rb_entry *rbt_root;
 };
 
 struct rb_entry {
-	struct rb_entry	 *rbt_parent;
-	struct rb_entry	 *rbt_left;
-	struct rb_entry	 *rbt_right;
-	unsigned int	  rbt_color;
+	struct rb_entry *rbt_parent;
+	struct rb_entry *rbt_left;
+	struct rb_entry *rbt_right;
+	unsigned int rbt_color;
 };
 
 #define RBT_HEAD(_name, _type)						\
@@ -549,35 +547,33 @@ struct _name {								\
 
 #define RBT_ENTRY(_type)	struct rb_entry
 
-static inline void
-_rb_init(struct rb_tree *rbt)
+static inline void _rb_init(struct rb_tree *rbt)
 {
 	rbt->rbt_root = NULL;
 }
 
-static inline int
-_rb_empty(struct rb_tree *rbt)
+static inline int _rb_empty(struct rb_tree *rbt)
 {
 	return (rbt->rbt_root == NULL);
 }
 
-void	*_rb_insert(const struct rb_type *, struct rb_tree *, void *);
-void	*_rb_remove(const struct rb_type *, struct rb_tree *, void *);
-void	*_rb_find(const struct rb_type *, struct rb_tree *, const void *);
-void	*_rb_nfind(const struct rb_type *, struct rb_tree *, const void *);
-void	*_rb_root(const struct rb_type *, struct rb_tree *);
-void	*_rb_min(const struct rb_type *, struct rb_tree *);
-void	*_rb_max(const struct rb_type *, struct rb_tree *);
-void	*_rb_next(const struct rb_type *, void *);
-void	*_rb_prev(const struct rb_type *, void *);
-void	*_rb_left(const struct rb_type *, void *);
-void	*_rb_right(const struct rb_type *, void *);
-void	*_rb_parent(const struct rb_type *, void *);
-void	 _rb_set_left(const struct rb_type *, void *, void *);
-void	 _rb_set_right(const struct rb_type *, void *, void *);
-void	 _rb_set_parent(const struct rb_type *, void *, void *);
-void	 _rb_poison(const struct rb_type *, void *, unsigned long);
-int	 _rb_check(const struct rb_type *, void *, unsigned long);
+void *_rb_insert(const struct rb_type *, struct rb_tree *, void *);
+void *_rb_remove(const struct rb_type *, struct rb_tree *, void *);
+void *_rb_find(const struct rb_type *, struct rb_tree *, const void *);
+void *_rb_nfind(const struct rb_type *, struct rb_tree *, const void *);
+void *_rb_root(const struct rb_type *, struct rb_tree *);
+void *_rb_min(const struct rb_type *, struct rb_tree *);
+void *_rb_max(const struct rb_type *, struct rb_tree *);
+void *_rb_next(const struct rb_type *, void *);
+void *_rb_prev(const struct rb_type *, void *);
+void *_rb_left(const struct rb_type *, void *);
+void *_rb_right(const struct rb_type *, void *);
+void *_rb_parent(const struct rb_type *, void *);
+void _rb_set_left(const struct rb_type *, void *, void *);
+void _rb_set_right(const struct rb_type *, void *, void *);
+void _rb_set_parent(const struct rb_type *, void *, void *);
+void _rb_poison(const struct rb_type *, void *, unsigned long);
+int _rb_check(const struct rb_type *, void *, unsigned long);
 
 #define RBT_INITIALIZER(_head)	{ { NULL } }
 
@@ -764,4 +760,4 @@ RBT_GENERATE_INTERNAL(_name, _type, _field, _cmp, _name##_RBT_AUGMENT)
 	     (_e) != NULL && ((_n) = RBT_PREV(_name, (_e)), 1);	\
 	     (_e) = (_n))
 
-#endif	
+#endif
