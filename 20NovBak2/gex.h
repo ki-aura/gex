@@ -23,7 +23,7 @@
 
 #include "rbtree.h"
 
-#define GEX_VERSION "2.2.6"  
+#define GEX_VERSION "2.2.5"  
 
 // keys we need that aren't already defined by ncurses
 #define KEY_ESCAPE 27
@@ -98,12 +98,10 @@ typedef struct {
 	WINDOW *win;
 } status_windef;
 
-extern volatile sig_atomic_t sigint_received;
 void handle_global_keys(int k);
 bool initial_setup(int argc, char *argv[]);
 int final_close(void);
 clickwin get_window_click(int *row, int *col);
-
 
 extern appdef app;
 extern status_windef status;

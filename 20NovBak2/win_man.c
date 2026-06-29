@@ -357,7 +357,7 @@ bool create_main_menu(void)
 		if (choice != -1)
 			break;	// break from do loop if valid choice
 
-	} while (c != KEY_ESCAPE && c != KEY_RESIZE && sigint_received == 0);
+	} while (c != KEY_ESCAPE && c != KEY_RESIZE);
 
 	//put curser back
 	curs_set(oldcurs);

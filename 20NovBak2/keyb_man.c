@@ -1,33 +1,26 @@
 #include "gex.h"
 
-/* --------------------------------------------------------------------- */
-/*  Small helpers: keep all cursor invariants in one place               */
-/* --------------------------------------------------------------------- */
+/* ---------- small helpers ---------- */
 
 static inline void clamp_byte_cursor(void)
 {
-    /* horizontal: keep cur_byte / cur_nibble in valid range */
     if (hex.cur_byte < 0)
         hex.cur_byte = ascii.width - 1;
     else if (hex.cur_byte >= ascii.width)
         hex.cur_byte = 0;
 
-    if (hex.cur_nibble < 0)
-        hex.cur_nibble = 1;
-    else if (hex.cur_nibble > 1)
-        hex.cur_nibble = 0;
+    if (hex.cur_nibble < 0) hex.cur_nibble = 1;
+    if (hex.cur_nibble > 1) hex.cur_nibble = 0;
 
-    /* derive legacy fields used elsewhere */
     hex.cur_digit = hex.cur_byte;
     hex.is_hinib  = (hex.cur_nibble == 0);
     hex.cur_col   = hex.cur_byte * 3 + (app.in_hex ? hex.cur_nibble : 0);
 }
 
-/* move horizontally by "delta": in hex, by nibbles; in ascii, by bytes */
 static inline void move_horiz(int delta)
 {
     if (app.in_hex) {
-        int n   = (hex.cur_byte * 2) + hex.cur_nibble + delta;
+        int n = (hex.cur_byte * 2) + hex.cur_nibble + delta;
         int max = ascii.width * 2;
 
         if (n < 0)
@@ -38,28 +31,17 @@ static inline void move_horiz(int delta)
         hex.cur_byte   = n / 2;
         hex.cur_nibble = n % 2;
     } else {
-        hex.cur_byte   += delta;
-        hex.cur_nibble  = 0;   /* ascii is always conceptually "whole bytes" */
+        hex.cur_byte += delta;
+        hex.cur_nibble = 0;
     }
 
     clamp_byte_cursor();
 }
 
-/* flip hex <-> ascii, staying on the same byte, normalising nibble */
-static inline void flip_pane_same_byte(void)
-{
-    app.in_hex      = !app.in_hex;
-    hex.cur_nibble  = 0;      /* on pane flip, always land on hi nib/byte */
-    clamp_byte_cursor();
-}
-
-/* public wrappers */
 void k_left(void)  { move_horiz(-1); }
 void k_right(void) { move_horiz(+1); }
 
-/* --------------------------------------------------------------------- */
-/*  Mouse handling                                                       */
-/* --------------------------------------------------------------------- */
+/* ---------- mouse ---------- */
 
 void handle_click(clickwin win, int row, int col)
 {
@@ -71,47 +53,34 @@ void handle_click(clickwin win, int row, int col)
     if (win == WIN_HEX) {
         app.in_hex = true;
 
-        if (col < 0)
-            col = 0;
+        if (col < 0) col = 0;
 
         int b = col / 3;
-        if (b >= ascii.width)
-            b = ascii.width - 1;
+        if (b >= ascii.width) b = ascii.width - 1;
 
         hex.cur_byte   = b;
         hex.cur_nibble = (col % 3 == 1) ? 1 : 0;
     }
     else if (win == WIN_ASCII) {
         app.in_hex     = false;
-
-        if (col < 0)
-            col = 0;
-
-        if (col >= ascii.width)
-            col = ascii.width - 1;
-
-        hex.cur_byte   = col;
+        hex.cur_byte   = (col < ascii.width) ? col : ascii.width - 1;
         hex.cur_nibble = 0;
     }
 
     clamp_byte_cursor();
-    update_cursor();
 }
 
-/* --------------------------------------------------------------------- */
-/*  Delete / undo logic                                                  */
-/* --------------------------------------------------------------------- */
+/* ---------- delete ---------- */
 
 void handle_delete(void)
 {
     int idx;
 
-    /* ensure we are on the hi nibble before deleting */
     if (!hex.is_hinib)
         k_left();
 
     idx = row_digit_to_offset(hex.cur_row, hex.cur_byte);
-    search.offset = (size_t)(hex.v_start + idx);
+    search.offset = (size_t) (hex.v_start + idx);
 
     found = RB_FIND(edit_tree, &edits, &search);
     if (found)
@@ -120,31 +89,17 @@ void handle_delete(void)
     update_all_windows();
 }
 
-/* --------------------------------------------------------------------- */
-/*  In-grid movement (no scrolling)                                      */
-/* --------------------------------------------------------------------- */
+/* ---------- in-grid movement ---------- */
 
 void handle_in_screen_movement(int k)
 {
     switch (k) {
 
     case KEY_TAB:
-        /* simple pane flip, keep same byte */
-        flip_pane_same_byte();
+        app.in_hex = !app.in_hex;
+        hex.cur_nibble = 0;
+        clamp_byte_cursor();
         break;
-
-#ifdef KEY_BTAB    /* Shift-Tab: example "diagonal" move */
-    case KEY_BTAB:
-        /*
-         * Example diagonal behaviour:
-         * - Flip pane
-         * - Move one byte to the left
-         * Tweak to taste or comment out this case entirely.
-         */
-        flip_pane_same_byte();
-        k_left();
-        break;
-#endif
 
     case KEY_NCURSES_BACKSPACE:
     case KEY_MAC_DELETE:
@@ -161,30 +116,6 @@ void handle_in_screen_movement(int k)
         k_right();
         break;
 
-#ifdef KEY_SLEFT
-    case KEY_SLEFT:
-        /*
-         * Shift-Left: go to start of row.
-         * If your terminal doesn't generate KEY_SLEFT,
-         * this case will never trigger.
-         */
-        hex.cur_byte   = 0;
-        hex.cur_nibble = 0;
-        clamp_byte_cursor();
-        break;
-#endif
-
-#ifdef KEY_SRIGHT
-    case KEY_SRIGHT:
-        /*
-         * Shift-Right: go to end of row.
-         */
-        hex.cur_byte   = ascii.width - 1;
-        hex.cur_nibble = 0;
-        clamp_byte_cursor();
-        break;
-#endif
-
     case KEY_HOME:
         hex.cur_row    = 0;
         hex.cur_byte   = 0;
@@ -198,26 +129,12 @@ void handle_in_screen_movement(int k)
         hex.cur_nibble = 0;
         clamp_byte_cursor();
         break;
-
-        /*
-         * If you want Ctrl-based navigation, you can bind specific
-         * control chars here, e.g.:
-         *
-         * case 2: // Ctrl-B
-         *     move_horiz(-ascii.width);
-         *     break;
-         * case 6: // Ctrl-F
-         *     move_horiz(+ascii.width);
-         *     break;
-         */
     }
 
     update_cursor();
 }
 
-/* --------------------------------------------------------------------- */
-/*  Scrolling movement                                                   */
-/* --------------------------------------------------------------------- */
+/* ---------- scrolling ---------- */
 
 void handle_scrolling_movement(int k)
 {
@@ -228,11 +145,9 @@ void handle_scrolling_movement(int k)
             hex.cur_row--;
             update_cursor();
         } else {
-            if (hex.v_start > (size_t)ascii.width)
-                hex.v_start -= ascii.width;
-            else
-                hex.v_start = 0;
-
+            hex.v_start = (hex.v_start > ascii.width)
+                            ? hex.v_start - ascii.width
+                            : 0;
             update_all_windows();
         }
         break;
@@ -254,7 +169,7 @@ void handle_scrolling_movement(int k)
         break;
 
     case KEY_NPAGE:
-        if ((size_t)hex.grid > app.fsize)
+        if ((size_t) hex.grid > app.fsize)
             hex.v_start = 0;
         else if (hex.v_start + (2 * hex.grid) < app.fsize)
             hex.v_start += hex.grid;
@@ -265,9 +180,9 @@ void handle_scrolling_movement(int k)
         break;
 
     case KEY_PPAGE:
-        if ((size_t)hex.grid > app.fsize)
+        if ((size_t) hex.grid > app.fsize)
             hex.v_start = 0;
-        else if (hex.v_start > (size_t)hex.grid)
+        else if (hex.v_start > (size_t) hex.grid)
             hex.v_start -= hex.grid;
         else
             hex.v_start = 0;
@@ -281,7 +196,7 @@ void handle_scrolling_movement(int k)
 
         hex.v_start = popup_question(tmp, "", PTYPE_UNSIGNED_LONG);
 
-        if ((size_t)hex.grid >= app.fsize)
+        if ((size_t) hex.grid >= app.fsize)
             hex.v_start = 0;
         else if ((hex.v_start + hex.grid) > app.fsize)
             hex.v_start = app.fsize - hex.grid;
@@ -291,9 +206,7 @@ void handle_scrolling_movement(int k)
     }
 }
 
-/* --------------------------------------------------------------------- */
-/*  Edit keys                                                            */
-/* --------------------------------------------------------------------- */
+/* ---------- edits ---------- */
 
 void handle_edit_keys(int k)
 {
@@ -303,7 +216,6 @@ void handle_edit_keys(int k)
 
     idx = row_digit_to_offset(hex.cur_row, hex.cur_byte);
 
-    /* don't edit past end-of-file */
     if (hex.v_start + idx >= app.fsize)
         return;
 
@@ -331,17 +243,17 @@ void handle_edit_keys(int k)
             full_edit_byte = found ? found->byte : full_file_byte;
 
             if (hex.is_hinib)
-                apply_hinib_to_byte(&full_edit_byte, (char)k);
+                apply_hinib_to_byte(&full_edit_byte, k);
             else
-                apply_lonib_to_byte(&full_edit_byte, (char)k);
+                apply_lonib_to_byte(&full_edit_byte, k);
 
             if (full_edit_byte == full_file_byte) {
                 if (found)
                     RB_REMOVE_FB(&edits, found);
             } else {
                 found = RB_INSERT_FB(&edits,
-                                     (size_t)(hex.v_start + idx),
-                                     full_edit_byte);
+                        (size_t)(hex.v_start + idx),
+                        full_edit_byte);
                 if (found != NULL)
                     found->byte = full_edit_byte;
             }
@@ -353,6 +265,6 @@ void handle_edit_keys(int k)
     if (valid_edit) {
         app.lasteditkey = k;
         update_all_windows();
-        k_right();  /* auto-advance after successful edit */
+        k_right();
     }
 }

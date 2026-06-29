@@ -12,7 +12,6 @@ status_windef status = {.win = NULL,.border = NULL };
 hex_windef hex = {.win = NULL,.border = NULL };
 ascii_windef ascii = {.win = NULL,.border = NULL };
 
-
 appdef app;
 MEVENT event;
 char *tmp = NULL;
@@ -59,9 +58,6 @@ bool initial_setup(int argc, char *argv[])
 	hex.cur_digit = 0;	// first hex digit (takes 3 spaces)
 	hex.is_hinib = true;	// left nibble of that digit
 	app.lasteditkey = 0;
-	// NEW: logical cursor model
-	hex.cur_byte   = 0;     // byte index within row
-	hex.cur_nibble = 0;     // 0 = hi, 1 = lo
 
 	// show cursor
 	curs_set(2);
@@ -211,9 +207,7 @@ void setup_signals(void)
 	struct sigaction sa;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_handler = signal_handler;
-//	sa.sa_flags = SA_RESTART;
-// changed from SA_RESTART to zero to avoid delay from get_ch() loop
-	sa.sa_flags = 0;
+	sa.sa_flags = SA_RESTART;
 
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGQUIT, &sa, NULL);
@@ -260,9 +254,6 @@ int main(int argc, char *argv[])
 			}
 			// Normal key handling
 			ch = getch();
-			if (ch == ERR && sigint_received != 0) {
-				break;
-			}
 			app.lastkey = ch;
 			handle_global_keys(ch);
 		}
